@@ -1,9 +1,10 @@
 [tool.poetry]
-name = "functions"
+name = "gcp_utils"
 version = "0.1.0"
 description = "Tools for cloud function development."
 authors = ["camhpj <cjohnson23@gwu.edu>"]
 readme = "README.md"
+packages = [{include = "gcp_utils"}]
 
 [tool.poetry.dependencies]
 python = "^3.9,<3.11"

@@ -1,8 +1,11 @@
+import sys
+sys.path.append('database_tools')
+
 import numpy as np
 import pickle as pkl
 from typing import Tuple
-from database_tools.database_tools.preprocessing.datastores import ConfigMapper, Window
-from database_tools.database_tools.preprocessing.functions import bandpass
+from database_tools.preprocessing.datastores import ConfigMapper, Window
+from database_tools.preprocessing.functions import bandpass
 
 def validate_window(
     username: str,

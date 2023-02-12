@@ -1,3 +1,0 @@
-[submodule "gcp_utils/functions/database_tools"]
-	path = gcp_utils/functions/database_tools
-	url = https://github.com/HeartfeltBP/database_tools.git
