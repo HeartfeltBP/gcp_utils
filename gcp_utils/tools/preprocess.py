@@ -1,6 +1,3 @@
-import sys
-sys.path.append('database_tools/')
-
 import numpy as np
 import pickle as pkl
 from typing import Tuple
