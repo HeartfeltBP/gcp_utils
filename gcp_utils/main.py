@@ -1,4 +1,6 @@
 from google.cloud import firestore
+# from gcp_utils.tools.preprocess import validate_window
+# from gcp_utils.tools.predict import get_inputs, predict_bp
 from tools.preprocess import validate_window
 from tools.predict import get_inputs, predict_bp
 

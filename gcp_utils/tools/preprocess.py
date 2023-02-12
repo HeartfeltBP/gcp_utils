@@ -6,13 +6,16 @@ from database_tools.preprocessing.functions import bandpass
 
 def validate_window(
     username: str,
-    sample_id: int,
-    ppg: list,
+    sample_id: str,
+    ppg: dict,
     config: dict,
 ) -> dict:
     cm = ConfigMapper(config)
 
+    ppg = np.array([float(x['doubleValue']) for x in ppg['values']], dtype=np.float)
+    ppg[np.isnan(ppg)] = 0
     ppg = bandpass(ppg, low=cm.freq_band[0], high=cm.freq_band[1], fs=cm.fs)
+
     win = Window(ppg, cm, checks=cm.checks)
     valid = win.valid
     vpg, apg = _get_ppg_derivatives(ppg)
