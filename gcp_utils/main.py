@@ -1,6 +1,6 @@
 from google.cloud import firestore
-from gcp_utils.functions.tools.preprocess import validate_window
-from gcp_utils.functions.tools.predict import get_inputs, predict_bp
+from gcp_utils.tools.preprocess import validate_window
+from gcp_utils.tools.predict import get_inputs, predict_bp
 
 client = firestore.Client()
 

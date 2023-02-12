@@ -1,5 +1,5 @@
 import sys
-sys.path.append('database_tools')
+sys.path.append('database_tools/')
 
 import numpy as np
 import pickle as pkl
