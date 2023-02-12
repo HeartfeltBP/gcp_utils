@@ -24,7 +24,7 @@ def validate_window(
 
     result = dict(
         username=username,
-        sample_id=sample_id,
+        sample_id=str(sample_id),
         valid=str(valid),
         ppg=list(ppg),
         vpg=list(vpg),

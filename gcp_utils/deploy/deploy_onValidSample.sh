@@ -1,4 +1,4 @@
-gcloud functions deploy onNewSample \
+gcloud functions deploy onValidSample \
   --entry-point onValidSample \
   --runtime python39 \
   --trigger-event "providers/cloud.firestore/eventTypes/document.create" \
