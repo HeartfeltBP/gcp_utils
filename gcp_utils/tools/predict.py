@@ -5,9 +5,9 @@ from google.protobuf import json_format
 from google.protobuf.struct_pb2 import Value
 
 def get_inputs(data) -> dict:
-    ppg = np.array(data["value"]["fields"]["ppg"]["arrayValue"]).reshape(256, 1).tolist()
-    vpg = np.array(data["value"]["fields"]["vpg"]["arrayValue"]).reshape(256, 1).tolist()
-    apg = np.array(data["value"]["fields"]["apg"]["arrayValue"]).reshape(256, 1).tolist()
+    ppg = np.array([float(x['doubleValue']) for x in data["value"]["fields"]["ppg"]["arrayValue"]['values']], dtype=np.float)
+    vpg = np.array([float(x['doubleValue']) for x in data["value"]["fields"]["vpg"]["arrayValue"]['values']], dtype=np.float)
+    apg = np.array([float(x['doubleValue']) for x in data["value"]["fields"]["apg"]["arrayValue"]['values']], dtype=np.float)
     instance_dict = {
         'ppg': ppg,
         'vpg': vpg,
