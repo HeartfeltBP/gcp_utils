@@ -1,4 +1,3 @@
-import numpy as np
 from google.cloud import firestore
 from tools.preprocess import validate_window
 from tools.predict import get_inputs, predict_bp
@@ -32,12 +31,12 @@ def onNewSample(data, context):
 
     username = data["value"]["fields"]["username"]["stringValue"]
     sample_id = data["value"]["fields"]["sample_id"]["integerValue"]
-    ppg = data["value"]["fields"]["ppg_raw"]["arrayValue"]
+    ppg_raw = data["value"]["fields"]["ppg_raw"]["arrayValue"]
 
     result = validate_window(
         username=username,
         sample_id=sample_id,
-        ppg=ppg,
+        ppg=ppg_raw,
         config=CONFIG,
     )
     client.collection('processed_samples').add(result)
