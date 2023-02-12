@@ -12,7 +12,7 @@ def validate_window(
 ) -> dict:
     cm = ConfigMapper(config)
 
-    ppg = np.array([float(x['doubleValue']) for x in ppg['values']], dtype=np.float)
+    ppg = np.array([float(x['doubleValue']) for x in ppg['values']], dtype=np.float32)
     ppg[np.isnan(ppg)] = 0
     ppg = bandpass(ppg, low=cm.freq_band[0], high=cm.freq_band[1], fs=cm.fs)
 
@@ -25,14 +25,14 @@ def validate_window(
     result = dict(
         username=username,
         sample_id=sample_id,
-        valid=valid,
-        ppg=ppg,
-        vpg=vpg,
-        apg=apg,
-        ppg_scaled=ppg_s,
-        vpg_scaled=vpg_s,
-        apg_scaled=apg_s,
-        predicted=False,  # set to True once prediction is made
+        valid=str(valid),
+        ppg=list(ppg),
+        vpg=list(vpg),
+        apg=list(apg),
+        ppg_scaled=list(ppg_s),
+        vpg_scaled=list(vpg_s),
+        apg_scaled=list(apg_s),
+        predicted='False',  # set to True once prediction is made
     )
     return result
 
