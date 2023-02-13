@@ -1,5 +1,5 @@
 import mock
-from gcp_utils.data import raw_valid_sample, processed_valid_sample, predicted_sample
+from gcp_utils import constants
 from gcp_utils.tools.utils import format_as_json
 from firebase_admin import firestore, initialize_app
 
@@ -13,17 +13,16 @@ def test_onNewSample():
     col = database.collection(u'heartfelt_data')
 
     # Add raw valid sample to collection (and get document id)
-    sample = raw_valid_sample()
-    col.add(sample)
+    col.add(constants.RAW_VALID_SAMPLE)
     doc = [x for x in col.where(u'sample_id', u'==', u'123456789').stream()][0]
     context.resource = '/databases/documents/heartfelt_data/' + str(doc.id)
 
     # Convert to JSON dictionary and test cloud function
-    data = format_as_json(sample)
+    data = format_as_json(constants.RAW_VALID_SAMPLE)
     onNewSample(data, context)
 
     # Get expected result
-    expected_data = format_as_json(processed_valid_sample())
+    expected_data = format_as_json(constants.processed_valid_sample())
 
     # Get processed data from firebase and compare
     doc = col.where(u'sample_id', u'==', u'123456789').stream()
@@ -47,7 +46,7 @@ def test_onValidSample():
     onValidSample(data, context)
 
     # Get expected result
-    expected_data = format_as_json(predicted_sample())
+    expected_data = format_as_json(constants.predicted_sample())
 
     # Get prediction from firebase and compare
     doc = col.where(u'sample_id', u'==', u'123456789').stream()

@@ -1,11 +1,9 @@
 from google.cloud import firestore
+from gcp_utils import constants
 from gcp_utils.tools.preprocess import validate_window
 from gcp_utils.tools.predict import predict_bp
-from gcp_utils.data import config
 
 client = firestore.Client()
-
-CONFIG = config()
 
 # Validate window
 def onNewSample(data, context):
@@ -18,7 +16,7 @@ def onNewSample(data, context):
 
     result = validate_window(
         ppg=ppg_raw,
-        config=CONFIG,
+        config=constants.CONFIG,
     )
     affected_doc.update({
         u'status': result['status'],
@@ -40,7 +38,7 @@ def onValidSample(data, context):
 
     status = str(data["value"]["fields"]["status"]["stringValue"])
     if status == 'valid':
-        result = predict_bp(data, CONFIG)
+        result = predict_bp(data, constants.CONFIG)
         affected_doc.update({
             u'status': result['status'],
             u'abp_scaled': result['abp_scaled'],

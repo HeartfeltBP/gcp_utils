@@ -3,7 +3,7 @@ from gcp_utils.tools.predict import predict_bp
 from gcp_utils.tools.utils import format_as_json
 
 CONFIG = dict(
-    scaler_path='gcp_utils/data/mimic3-min-max-2022-11-08.pkl',
+    scaler_path='gcp_utils/mimic3-min-max-2022-11-08.pkl',
     checks=['snr', 'hr', 'beat'],
     fs=125,                                 # sampling frequency
     win_len=256,                            # window length
@@ -33,12 +33,6 @@ RAW_VALID_SAMPLE = {
     'abp_scaled': [0],
     'abp': [0],
 }
-
-def config():
-    return CONFIG
-
-def raw_valid_sample():
-    return RAW_VALID_SAMPLE
 
 def processed_valid_sample():
     result = validate_window(RAW_VALID_SAMPLE['ppg_raw'], CONFIG)
