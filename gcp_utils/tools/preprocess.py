@@ -3,7 +3,6 @@ import pickle as pkl
 from typing import Tuple
 from database_tools.preprocessing.datastores import ConfigMapper, Window
 from database_tools.preprocessing.functions import bandpass
-from .utils import default_to_json
 
 def validate_window(
     username: str,
@@ -23,19 +22,17 @@ def validate_window(
 
     ppg_s, vpg_s, apg_s = _scale_data(cm.scaler_path, ppg, vpg, apg)
 
-    result = {'value':
-        {'fields': {
-            default_to_json(str(username), 'username'),
-            default_to_json(int(sample_id), 'sample_id'),
-            default_to_json(bool(valid), 'valid'),
-            default_to_json(list(ppg), 'ppg'),
-            default_to_json(list(vpg), 'vpg'),
-            default_to_json(list(apg), 'apg'),
-            default_to_json(list(ppg_s), 'ppg_scaled'),
-            default_to_json(list(vpg_s), 'vpg_scaled'),
-            default_to_json(list(apg_s), 'apg_scaled'),
-            default_to_json(False, 'predicted')  # set to True once prediction is made
-        }}
+    result = {
+        u'username': str(username),
+        u'sample_id': int(sample_id),
+        u'valid': bool(valid),
+        u'ppg': list(ppg),
+        u'vpg': list(vpg),
+        u'apg': list(apg),
+        u'ppg_scaled': list(ppg_s),
+        u'vpg_scaled': list(vpg_s),
+        u'apg_scaled': list(apg_s),
+        u'predicted': False,
     }
     return result
 

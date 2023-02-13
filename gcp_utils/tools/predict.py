@@ -3,7 +3,6 @@ from typing import Dict, List, Union
 from google.cloud import aiplatform
 from google.protobuf import json_format
 from google.protobuf.struct_pb2 import Value
-from .utils import default_to_json
 
 def get_inputs(data) -> dict:
     ppg = np.array([float(x['doubleValue']) for x in data["value"]["fields"]["ppg_scaled"]["arrayValue"]['values']], dtype=np.float32)
@@ -50,11 +49,9 @@ def predict_bp(
 
     # The predictions are a google.protobuf.Value representation of the model's predictions.
     pred = np.array(response.predictions[0]).flatten()
-    result = {'value':
-        {'fields': {
-            default_to_json(str(username), 'username'),
-            default_to_json(str(sample_id), 'sample_id'),
-            default_to_json(list(pred), 'abp'),
-        }}
+    result = {
+        'username': str(username),
+        'sample_id': int(sample_id),
+        'abp': list(pred),
     }
     return result
