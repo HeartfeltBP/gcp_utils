@@ -1,11 +1,11 @@
 from google.cloud import firestore
-from gcp_utils.tools.preprocess import validate_window
+from gcp_utils.tools.preprocess import validate_window, rescale_data
 from gcp_utils.tools.predict import get_inputs, predict_bp
 
 client = firestore.Client()
 
 CONFIG = dict(
-    scaler_path='scalers/mimic3-min-max-2022-11-08.pkl',
+    scaler_path='gcp_utils/data/mimic3-min-max-2022-11-08.pkl',
     checks=['snr', 'hr', 'beat'],
     fs=125,                                 # sampling frequency
     win_len=256,                            # window length
@@ -52,21 +52,18 @@ def onValidSample(data, context):
 
     affected_doc = client.collection(collection_path).document(document_path)
 
-    user_id = str(data["value"]["fields"]["user_id"]["stringValue"])
-    sample_id = str(data["value"]["fields"]["sample_id"]["stringValue"])
-    valid = bool(data["value"]["fields"]["valid"]["booleanValue"])
-
-    if valid:
+    status = str(data["value"]["fields"]["stats"]["stringValue"])
+    if status == 'valid':
         instance_dict = get_inputs(data)
-        result = predict_bp(
-            username=user_id,
-            sample_id=sample_id,
+        abp_scaled = predict_bp(
             project="123543907199",
             endpoint_id="4207052545266286592",
             location="us-central1",
             instances=instance_dict,
         )
-        client.collection('predictions').add(result)
+        abp = rescale_data(CONFIG['scaler_path'], abp_scaled)
         affected_doc.update({
-            u'predicted': True
+            u'status': 'predicted',
+            u'abp_scaled': abp_scaled,
+            u'abp': abp,
         })

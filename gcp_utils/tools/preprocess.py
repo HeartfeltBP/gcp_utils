@@ -36,15 +36,20 @@ def _get_ppg_derivatives(ppg: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     apg = np.gradient(vpg, axis=0)  # 2nd derivative of vpg
     return (vpg, apg)
 
+def rescale_data(path: str, abp: np.ndarray) -> np.ndarray:
+    with open(path, 'rb') as f:
+        scalers = pkl.load(f)
+    abp_scaler = scalers['abp']
+    abp_s = np.multiply(abp, abp_scaler[1] - abp_scaler[0]) + abp_scaler[0]
+    return abp_s
+
 def _scale_data(path: str, ppg: np.ndarray, vpg: np.ndarray, apg: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     with open(path, 'rb') as f:
         scalers = pkl.load(f)
-
     ppg_scaler = scalers['ppg']
     vpg_scaler = scalers['vpg']
     apg_scaler = scalers['apg']
-
-    ppg_s = np.multiply(ppg, ppg_scaler[1] - ppg_scaler[0]) + ppg_scaler[0]
-    vpg_s = np.multiply(vpg, vpg_scaler[1] - vpg_scaler[0]) + vpg_scaler[0]
-    apg_s = np.multiply(apg, apg_scaler[1] - apg_scaler[0]) + apg_scaler[0]
+    ppg_s = np.divide(ppg - ppg_scaler[0], ppg_scaler[1] - ppg_scaler[0])
+    vpg_s = np.divide(vpg - vpg_scaler[0], vpg_scaler[1] - vpg_scaler[0])
+    apg_s = np.divide(apg - apg_scaler[0], apg_scaler[1] - apg_scaler[0])
     return (ppg_s, vpg_s, apg_s)

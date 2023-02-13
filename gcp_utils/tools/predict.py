@@ -16,14 +16,12 @@ def get_inputs(data) -> dict:
     return instance_dict
 
 def predict_bp(
-    user_id: str,
-    sample_id: str,
     project: str,
     endpoint_id: str,
     instances: Union[Dict, List[Dict]],
     location: str = "us-central1",
     api_endpoint: str = "us-central1-aiplatform.googleapis.com",
-):
+) -> list:
     """
     `instances` can be either single instance of type dict or a list
     of instances.
@@ -49,9 +47,4 @@ def predict_bp(
 
     # The predictions are a google.protobuf.Value representation of the model's predictions.
     pred = np.array(response.predictions[0]).flatten()
-    result = {
-        'username': str(user_id),
-        'sample_id': str(sample_id),
-        'abp': list(pred),
-    }
-    return result
+    return list(pred)
