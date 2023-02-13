@@ -6,7 +6,7 @@ from database_tools.preprocessing.functions import bandpass
 
 def validate_window(
     username: str,
-    sample_id: str,
+    sample_id: int,
     ppg: dict,
     config: dict,
 ) -> dict:
@@ -24,7 +24,7 @@ def validate_window(
 
     result = dict(
         username=username,
-        sample_id=str(sample_id),
+        sample_id=int(sample_id),
         valid=str(valid),
         ppg=list(ppg),
         vpg=list(vpg),
