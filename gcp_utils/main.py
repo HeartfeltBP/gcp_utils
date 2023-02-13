@@ -31,8 +31,8 @@ def onNewSample(data, context):
 
     affected_doc = client.collection(collection_path).document(document_path)
 
-    username = data["value"]["fields"]["username"]["stringValue"]
-    sample_id = data["value"]["fields"]["sample_id"]["integerValue"]
+    username = str(data["value"]["fields"]["username"]["stringValue"])
+    sample_id = int(data["value"]["fields"]["sample_id"]["integerValue"])
     ppg_raw = data["value"]["fields"]["ppg_raw"]["arrayValue"]
 
     result = validate_window(
@@ -54,26 +54,21 @@ def onValidSample(data, context):
 
     affected_doc = client.collection(collection_path).document(document_path)
 
-    username = data["value"]["fields"]["username"]["stringValue"]
-    sample_id = data["value"]["fields"]["sample_id"]["integerValue"]
+    username = str(data["value"]["fields"]["username"]["stringValue"])
+    sample_id = int(data["value"]["fields"]["sample_id"]["integerValue"])
+    valid = bool(data["value"]["fields"]["valid"]["booleanValue"])
 
-    valid = data["value"]["fields"]["valid"]["booleanValue"]
     if valid:
         instance_dict = get_inputs(data)
-        abp = predict_bp(
+        result = predict_bp(
+            username=username,
+            sample_id=sample_id,
             project="123543907199",
             endpoint_id="4207052545266286592",
             location="us-central1",
             instance_dict=instance_dict,
         )
-        
-        result = dict(
-            username=username,
-            sample_id=sample_id,
-            abp=abp,
-        )
         client.collection('predictions').add(result)
-
         affected_doc.update({
             u'predicted': True
         })

@@ -3,6 +3,7 @@ import pickle as pkl
 from typing import Tuple
 from database_tools.preprocessing.datastores import ConfigMapper, Window
 from database_tools.preprocessing.functions import bandpass
+from .utils import default_to_json
 
 def validate_window(
     username: str,
@@ -22,18 +23,20 @@ def validate_window(
 
     ppg_s, vpg_s, apg_s = _scale_data(cm.scaler_path, ppg, vpg, apg)
 
-    result = dict(
-        username=username,
-        sample_id=int(sample_id),
-        valid=str(valid),
-        ppg=list(ppg),
-        vpg=list(vpg),
-        apg=list(apg),
-        ppg_scaled=list(ppg_s),
-        vpg_scaled=list(vpg_s),
-        apg_scaled=list(apg_s),
-        predicted='False',  # set to True once prediction is made
-    )
+    result = {'value':
+        {'fields': [
+            default_to_json(username, 'username'),
+            default_to_json(sample_id, 'sample_id'),
+            default_to_json(valid, 'valid'),
+            default_to_json(list(ppg), 'ppg'),
+            default_to_json(list(vpg), 'vpg'),
+            default_to_json(list(apg), 'apg'),
+            default_to_json(list(ppg_s), 'ppg_scaled'),
+            default_to_json(list(vpg_s), 'vpg_scaled'),
+            default_to_json(list(apg_s), 'apg_scaled'),
+            default_to_json(False, 'predicted')  # set to True once prediction is made
+        ]}
+    }
     return result
 
 def _get_ppg_derivatives(ppg: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
