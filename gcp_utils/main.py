@@ -1,8 +1,8 @@
 from google.cloud import firestore
-# from gcp_utils.tools.preprocess import validate_window
-# from gcp_utils.tools.predict import get_inputs, predict_bp
-from tools.preprocess import validate_window
-from tools.predict import get_inputs, predict_bp
+from gcp_utils.tools.preprocess import validate_window
+from gcp_utils.tools.predict import get_inputs, predict_bp
+# from tools.preprocess import validate_window
+# from tools.predict import get_inputs, predict_bp
 
 client = firestore.Client()
 
@@ -31,12 +31,12 @@ def onNewSample(data, context):
 
     affected_doc = client.collection(collection_path).document(document_path)
 
-    username = str(data["value"]["fields"]["username"]["stringValue"])
+    user_id = str(data["value"]["fields"]["user_id"]["stringValue"])
     sample_id = str(data["value"]["fields"]["sample_id"]["stringValue"])
     ppg_raw = data["value"]["fields"]["ppg_raw"]["arrayValue"]
 
     result = validate_window(
-        username=username,
+        user_id=user_id,
         sample_id=sample_id,
         ppg=ppg_raw,
         config=CONFIG,
@@ -54,14 +54,14 @@ def onValidSample(data, context):
 
     affected_doc = client.collection(collection_path).document(document_path)
 
-    username = str(data["value"]["fields"]["username"]["stringValue"])
+    user_id = str(data["value"]["fields"]["user_id"]["stringValue"])
     sample_id = str(data["value"]["fields"]["sample_id"]["stringValue"])
     valid = bool(data["value"]["fields"]["valid"]["booleanValue"])
 
     if valid:
         instance_dict = get_inputs(data)
         result = predict_bp(
-            username=username,
+            username=user_id,
             sample_id=sample_id,
             project="123543907199",
             endpoint_id="4207052545266286592",

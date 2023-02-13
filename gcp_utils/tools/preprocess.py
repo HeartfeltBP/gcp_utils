@@ -5,7 +5,7 @@ from database_tools.preprocessing.datastores import ConfigMapper, Window
 from database_tools.preprocessing.functions import bandpass
 
 def validate_window(
-    username: str,
+    user_id: str,
     sample_id: str,
     ppg: dict,
     config: dict,
@@ -23,7 +23,7 @@ def validate_window(
     ppg_s, vpg_s, apg_s = _scale_data(cm.scaler_path, ppg, vpg, apg)
 
     result = {
-        u'username': str(username),
+        u'user_id': str(user_id),
         u'sample_id': str(sample_id),
         u'valid': bool(valid),
         u'ppg': list(ppg),

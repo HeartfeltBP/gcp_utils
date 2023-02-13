@@ -16,7 +16,7 @@ def get_inputs(data) -> dict:
     return instance_dict
 
 def predict_bp(
-    username: str,
+    user_id: str,
     sample_id: str,
     project: str,
     endpoint_id: str,
@@ -50,7 +50,7 @@ def predict_bp(
     # The predictions are a google.protobuf.Value representation of the model's predictions.
     pred = np.array(response.predictions[0]).flatten()
     result = {
-        'username': str(username),
+        'username': str(user_id),
         'sample_id': str(sample_id),
         'abp': list(pred),
     }

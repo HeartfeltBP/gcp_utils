@@ -1011,6 +1011,14 @@ docs = ["sphinx"]
 test = ["pytest", "pytest-cov"]
 
 [[package]]
+name = "mock-firestore"
+version = "0.11.0"
+description = "In-memory implementation of Google Cloud Firestore for use in tests"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "more-itertools"
 version = "9.0.0"
 description = "More routines for operating on iterables, beyond itertools"
@@ -1962,7 +1970,7 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9,<3.10"
-content-hash = "f9e6868d24da4b7bcbeeec8af1dc85b9df272a900b74906226117730c440c859"
+content-hash = "69321935a89abc58c7208dd9b425ed6a242b9864e49e99761aa40a1b20ce4bd1"
 
 [metadata.files]
 absl-py = [
@@ -2784,6 +2792,10 @@ mdurl = [
 mock = [
     {file = "mock-5.0.1-py3-none-any.whl", hash = "sha256:c41cfb1e99ba5d341fbcc5308836e7d7c9786d302f995b2c271ce2144dece9eb"},
     {file = "mock-5.0.1.tar.gz", hash = "sha256:e3ea505c03babf7977fd21674a69ad328053d414f05e6433c30d8fa14a534a6b"},
+]
+mock-firestore = [
+    {file = "mock-firestore-0.11.0.tar.gz", hash = "sha256:4958b983534b890f7cdffe12b651b1deefa6ee202ee46af751c6bdaa44fe3432"},
+    {file = "mock_firestore-0.11.0-py3-none-any.whl", hash = "sha256:9e847a886a64d490bf13e2d52105745b6618d6a7e7169aeb62d4b895c405d204"},
 ]
 more-itertools = [
     {file = "more-itertools-9.0.0.tar.gz", hash = "sha256:5a6257e40878ef0520b1803990e3e22303a41b5714006c32a3fd8304b26ea1ab"},
