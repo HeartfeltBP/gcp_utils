@@ -1,25 +1,11 @@
 from google.cloud import firestore
-from gcp_utils.tools.preprocess import validate_window, rescale_data
-from gcp_utils.tools.predict import get_inputs, predict_bp
+from gcp_utils.tools.preprocess import validate_window
+from gcp_utils.tools.predict import predict_bp
+from gcp_utils.data import config
 
 client = firestore.Client()
 
-CONFIG = dict(
-    scaler_path='gcp_utils/data/mimic3-min-max-2022-11-08.pkl',
-    checks=['snr', 'hr', 'beat'],
-    fs=125,                                 # sampling frequency
-    win_len=256,                            # window length
-    freq_band=[0.5, 8.0],                   # bandpass frequencies
-    sim=0.6,                                # similarity threshold
-    snr=2.0,                                # SNR threshold
-    hr_freq_band=[0.667, 3.0],              # valid heartrate frequency band in Hz
-    hr_delta=1/6,                           # maximum heart rate difference between ppg, abp
-    dbp_bounds=[20, 130],                   # upper and lower threshold for DBP
-    sbp_bounds=[50, 225],                   # upper and lower threshold for SBP
-    windowsize=1,                           # windowsize for rolling mean
-    ma_perc=20,                             # multiplier for peak detection
-    beat_sim=0.2,                           # lower threshold for beat similarity
-)
+CONFIG = config()
 
 # Validate window
 def onNewSample(data, context):
@@ -54,16 +40,9 @@ def onValidSample(data, context):
 
     status = str(data["value"]["fields"]["status"]["stringValue"])
     if status == 'valid':
-        instances = get_inputs(data)
-        abp_scaled = predict_bp(
-            project="123543907199",
-            endpoint_id="4207052545266286592",
-            location="us-central1",
-            instances=instances,
-        )
-        abp = rescale_data(CONFIG['scaler_path'], abp_scaled)
+        result = predict_bp(data, CONFIG)
         affected_doc.update({
-            u'status': 'predicted',
-            u'abp_scaled': abp_scaled,
-            u'abp': abp.tolist(),
+            u'status': result['status'],
+            u'abp_scaled': result['abp_scaled'],
+            u'abp': result['abp'],
         })
