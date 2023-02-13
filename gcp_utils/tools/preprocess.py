@@ -25,9 +25,9 @@ def validate_window(
 
     result = {'value':
         {'fields': [
-            default_to_json(username, 'username'),
-            default_to_json(sample_id, 'sample_id'),
-            default_to_json(valid, 'valid'),
+            default_to_json(str(username), 'username'),
+            default_to_json(int(sample_id), 'sample_id'),
+            default_to_json(bool(valid), 'valid'),
             default_to_json(list(ppg), 'ppg'),
             default_to_json(list(vpg), 'vpg'),
             default_to_json(list(apg), 'apg'),
