@@ -24,7 +24,7 @@ def validate_window(
     ppg_s, vpg_s, apg_s = _scale_data(cm.scaler_path, ppg, vpg, apg)
 
     result = {'value':
-        {'fields': [
+        {'fields': {
             default_to_json(str(username), 'username'),
             default_to_json(int(sample_id), 'sample_id'),
             default_to_json(bool(valid), 'valid'),
@@ -35,7 +35,7 @@ def validate_window(
             default_to_json(list(vpg_s), 'vpg_scaled'),
             default_to_json(list(apg_s), 'apg_scaled'),
             default_to_json(False, 'predicted')  # set to True once prediction is made
-        ]}
+        }}
     }
     return result
 

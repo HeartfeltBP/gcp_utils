@@ -51,10 +51,10 @@ def predict_bp(
     # The predictions are a google.protobuf.Value representation of the model's predictions.
     pred = np.array(response.predictions[0]).flatten()
     result = {'value':
-        {'fields': [
+        {'fields': {
             default_to_json(str(username), 'username'),
             default_to_json(str(sample_id), 'sample_id'),
             default_to_json(list(pred), 'abp'),
-        ]}
+        }}
     }
     return result
