@@ -5,14 +5,14 @@ from google.protobuf import json_format
 from google.protobuf.struct_pb2 import Value
 
 def get_inputs(data) -> dict:
-    ppg = np.array([float(x['doubleValue']) for x in data["value"]["fields"]["ppg_scaled"]["arrayValue"]['values']], dtype=np.float32)
-    vpg = np.array([float(x['doubleValue']) for x in data["value"]["fields"]["vpg_scaled"]["arrayValue"]['values']], dtype=np.float32)
-    apg = np.array([float(x['doubleValue']) for x in data["value"]["fields"]["apg_scaled"]["arrayValue"]['values']], dtype=np.float32)
-    instance_dict = {
-        'ppg': ppg,
-        'vpg': vpg,
-        'apg': apg,
-    }
+    ppg = np.array([float(x['doubleValue']) for x in data["value"]["fields"]["ppg_scaled"]["arrayValue"]['values']][0:256], dtype=np.float32)
+    vpg = np.array([float(x['doubleValue']) for x in data["value"]["fields"]["vpg_scaled"]["arrayValue"]['values']][0:256], dtype=np.float32)
+    apg = np.array([float(x['doubleValue']) for x in data["value"]["fields"]["apg_scaled"]["arrayValue"]['values']][0:256], dtype=np.float32)
+    instance_dict = [{
+        'ppg': ppg.reshape(256, 1).tolist(),
+        'vpg': vpg.reshape(256, 1).tolist(),
+        'apg': apg.reshape(256, 1).tolist(),
+    }]
     return instance_dict
 
 def predict_bp(
@@ -32,10 +32,6 @@ def predict_bp(
     # This client only needs to be created once, and can be reused for multiple requests.
     client = aiplatform.gapic.PredictionServiceClient(client_options=client_options)
     # The format of each instance should conform to the deployed model's prediction input schema.
-    instances = instances if type(instances) == list else [instances]
-    instances = [
-        json_format.ParseDict(instance_dict, Value()) for instance_dict in instances
-    ]
     parameters_dict = {}
     parameters = json_format.ParseDict(parameters_dict, Value())
     endpoint = client.endpoint_path(
@@ -47,4 +43,4 @@ def predict_bp(
 
     # The predictions are a google.protobuf.Value representation of the model's predictions.
     pred = np.array(response.predictions[0]).flatten()
-    return list(pred)
+    return pred.tolist()

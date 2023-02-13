@@ -29,3 +29,21 @@ def test_onNewSample():
     doc = col.where(u'sample_id', u'==', u'123456789').stream()
     data = format_as_json(doc)
     assert data == expected_data
+
+def test_onValidSample():
+    context = mock.Mock()
+    database = firestore.client()
+    col = database.collection(u'heartfelt_data')
+
+    # Get test sample data
+    doc = col.where(u'sample_id', u'==', u'123456789').stream()
+    data = format_as_json(doc)
+
+    # Get context
+    doc = [x for x in col.where(u'sample_id', u'==', u'123456789').stream()][0]
+    context.resource = '/databases/documents/heartfelt_data/' + str(doc.id)
+
+    # Test cloud function
+    onValidSample(data, context)
+
+    assert True

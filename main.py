@@ -52,18 +52,18 @@ def onValidSample(data, context):
 
     affected_doc = client.collection(collection_path).document(document_path)
 
-    status = str(data["value"]["fields"]["stats"]["stringValue"])
+    status = str(data["value"]["fields"]["status"]["stringValue"])
     if status == 'valid':
-        instance_dict = get_inputs(data)
+        instances = get_inputs(data)
         abp_scaled = predict_bp(
             project="123543907199",
             endpoint_id="4207052545266286592",
             location="us-central1",
-            instances=instance_dict,
+            instances=instances,
         )
         abp = rescale_data(CONFIG['scaler_path'], abp_scaled)
         affected_doc.update({
             u'status': 'predicted',
             u'abp_scaled': abp_scaled,
-            u'abp': abp,
+            u'abp': abp.tolist(),
         })
