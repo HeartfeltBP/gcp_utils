@@ -1,8 +1,6 @@
 from google.cloud import firestore
 from gcp_utils.tools.preprocess import validate_window
 from gcp_utils.tools.predict import get_inputs, predict_bp
-# from tools.preprocess import validate_window
-# from tools.predict import get_inputs, predict_bp
 
 client = firestore.Client()
 
@@ -30,20 +28,20 @@ def onNewSample(data, context):
     document_path = '/'.join(path_parts[1:])
 
     affected_doc = client.collection(collection_path).document(document_path)
-
-    user_id = str(data["value"]["fields"]["user_id"]["stringValue"])
-    sample_id = str(data["value"]["fields"]["sample_id"]["stringValue"])
-    ppg_raw = data["value"]["fields"]["ppg_raw"]["arrayValue"]
+    ppg_raw = [float(x['doubleValue']) for x in data["value"]["fields"]["ppg_raw"]["arrayValue"]['values']]
 
     result = validate_window(
-        user_id=user_id,
-        sample_id=sample_id,
         ppg=ppg_raw,
         config=CONFIG,
     )
-    client.collection('processed_samples').add(result)
     affected_doc.update({
-        u'processed': True,
+        u'status': result['status'],
+        u'ppg': result['ppg'],
+        u'vpg': result['vpg'],
+        u'apg': result['apg'],
+        u'ppg_scaled': result['ppg_scaled'],
+        u'vpg_scaled': result['vpg_scaled'],
+        u'apg_scaled': result['apg_scaled'],
     })
 
 # Make prediction on ppg using enceladus (vital-bee-206-serving)

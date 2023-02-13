@@ -5,34 +5,29 @@ from database_tools.preprocessing.datastores import ConfigMapper, Window
 from database_tools.preprocessing.functions import bandpass
 
 def validate_window(
-    user_id: str,
-    sample_id: str,
-    ppg: dict,
+    ppg: list,
     config: dict,
 ) -> dict:
     cm = ConfigMapper(config)
 
-    ppg = np.array([float(x['doubleValue']) for x in ppg['values']], dtype=np.float32)
+    ppg = np.array(ppg, dtype=np.float32)
     ppg[np.isnan(ppg)] = 0
     ppg = bandpass(ppg, low=cm.freq_band[0], high=cm.freq_band[1], fs=cm.fs)
 
     win = Window(ppg, cm, checks=cm.checks)
-    valid = win.valid
+    status = 'valid' if win.valid else 'invalid'
     vpg, apg = _get_ppg_derivatives(ppg)
 
     ppg_s, vpg_s, apg_s = _scale_data(cm.scaler_path, ppg, vpg, apg)
 
     result = {
-        u'user_id': str(user_id),
-        u'sample_id': str(sample_id),
-        u'valid': bool(valid),
-        u'ppg': list(ppg),
-        u'vpg': list(vpg),
-        u'apg': list(apg),
-        u'ppg_scaled': list(ppg_s),
-        u'vpg_scaled': list(vpg_s),
-        u'apg_scaled': list(apg_s),
-        u'predicted': False,
+        'status': str(status),
+        'ppg': list(ppg),
+        'vpg': list(vpg),
+        'apg': list(apg),
+        'ppg_scaled': list(ppg_s),
+        'vpg_scaled': list(vpg_s),
+        'apg_scaled': list(apg_s),
     }
     return result
 
@@ -40,7 +35,6 @@ def _get_ppg_derivatives(ppg: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     vpg = np.gradient(ppg, axis=0)  # 1st derivative of ppg
     apg = np.gradient(vpg, axis=0)  # 2nd derivative of vpg
     return (vpg, apg)
-
 
 def _scale_data(path: str, ppg: np.ndarray, vpg: np.ndarray, apg: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     with open(path, 'rb') as f:
