@@ -1,8 +1,9 @@
 google-cloud-firestore==2.5.0
-keras==2.11.0
+keras==2.9.0
 heartpy==1.2.7
 numpy==1.23.5
 scipy==1.9.3
 pandas==1.5.2
 google-cloud==0.34.0
 google-cloud-aiplatform==1.21.0
+heartfelt-tools==1.0.4
