@@ -17,7 +17,7 @@ def get_inputs(data) -> dict:
 
 def predict_bp(
     username: str,
-    sample_id: int,
+    sample_id: str,
     project: str,
     endpoint_id: str,
     instances: Union[Dict, List[Dict]],
@@ -51,7 +51,7 @@ def predict_bp(
     pred = np.array(response.predictions[0]).flatten()
     result = {
         'username': str(username),
-        'sample_id': int(sample_id),
+        'sample_id': str(sample_id),
         'abp': list(pred),
     }
     return result

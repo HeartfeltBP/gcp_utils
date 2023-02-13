@@ -32,7 +32,7 @@ def onNewSample(data, context):
     affected_doc = client.collection(collection_path).document(document_path)
 
     username = str(data["value"]["fields"]["username"]["stringValue"])
-    sample_id = int(data["value"]["fields"]["sample_id"]["integerValue"])
+    sample_id = str(data["value"]["fields"]["sample_id"]["stringValue"])
     ppg_raw = data["value"]["fields"]["ppg_raw"]["arrayValue"]
 
     result = validate_window(
@@ -55,7 +55,7 @@ def onValidSample(data, context):
     affected_doc = client.collection(collection_path).document(document_path)
 
     username = str(data["value"]["fields"]["username"]["stringValue"])
-    sample_id = int(data["value"]["fields"]["sample_id"]["integerValue"])
+    sample_id = str(data["value"]["fields"]["sample_id"]["stringValue"])
     valid = bool(data["value"]["fields"]["valid"]["booleanValue"])
 
     if valid:
@@ -66,7 +66,7 @@ def onValidSample(data, context):
             project="123543907199",
             endpoint_id="4207052545266286592",
             location="us-central1",
-            instance_dict=instance_dict,
+            instances=instance_dict,
         )
         client.collection('predictions').add(result)
         affected_doc.update({
