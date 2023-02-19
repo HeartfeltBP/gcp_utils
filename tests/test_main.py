@@ -19,7 +19,7 @@ def test_onNewFrame():
     context.resource = 'databases/documents/frames_test/' + str(doc.id)
 
     # Convert to JSON and test cloud function
-    data = format_as_json(constants.BPM_FRAME)[0]
+    data = format_as_json(constants.BPM_FRAME)[0]  # dict
     onNewFrame(data, context)
 
     # Get expected result
@@ -28,7 +28,7 @@ def test_onNewFrame():
     # Get processed data from firebase and compare
     col = database.collection(u'data_test')
     doc_gen = col.where(u'fid', u'==', u'987654321').stream()
-    cloud_data = format_as_json(doc_gen)
+    cloud_data = format_as_json(doc_gen)  # multiple docs
     case = unittest.TestCase()
     case.assertCountEqual(cloud_data, expected_data)
 
@@ -43,7 +43,7 @@ def test_onNewSample():
     context.resource = '/databases/documents/data_test/' + str(doc.id)
 
     # Convert to JSON dictionary and test cloud function
-    data = format_as_json(constants.RAW_VALID_SAMPLE)[0]
+    data = format_as_json(constants.RAW_VALID_SAMPLE)[0]  # dict
     onNewSample(data, context)
 
     # Get expected result
@@ -51,7 +51,7 @@ def test_onNewSample():
 
     # Get processed data from firebase and compare
     doc = col.where(u'sid', u'==', u'123456789').stream()
-    cloud_data = format_as_json(doc)[0]  # single document
+    cloud_data = format_as_json(doc)[0]  # single doc
     assert cloud_data == expected_data
 
 def test_onValidSample():
@@ -61,7 +61,7 @@ def test_onValidSample():
 
     # Get test sample data
     doc = col.where(u'sid', u'==', u'123456789').stream()
-    data = format_as_json(doc)[0]
+    data = format_as_json(doc)[0]  # single doc
 
     # Get context
     doc = [x for x in col.where(u'sid', u'==', u'123456789').stream()][0]
@@ -71,9 +71,9 @@ def test_onValidSample():
     onValidSample(data, context)
 
     # Get expected result
-    expected_data = format_as_json(constants.predicted_sample())[0]
+    expected_data = format_as_json(constants.predicted_sample())[0]  # dict
 
     # Get prediction from firebase and compare
     doc = col.where(u'sid', u'==', u'123456789').stream()
-    cloud_data = format_as_json(doc)[0] # single document
+    cloud_data = format_as_json(doc)[0]  # single doc
     assert cloud_data == expected_data
