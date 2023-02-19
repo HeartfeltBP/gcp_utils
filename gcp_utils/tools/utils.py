@@ -1,6 +1,20 @@
-import math
+import json
+import hashlib
 import numpy as np
 from scipy import signal
+from typing import Tuple
+
+def hash_obj(obj):
+    uid = hashlib.sha256(
+        json.dumps(sorted({str(obj): obj})).encode("utf-8")
+    ).hexdigest()
+    return uid
+
+def get_document_context(context):
+    path_parts = context.resource.split('/documents/')[1].split('/')
+    collection_path = path_parts[0]
+    document_path = '/'.join(path_parts[1:])
+    return (collection_path, document_path)
 
 def default_to_json(x):
     if isinstance(x, int):
@@ -19,14 +33,18 @@ def default_to_json(x):
         raise TypeError(f'Type \'{type(x)}\' is not a supported type')
 
 def format_as_json(doc) -> dict:
-    if not isinstance(doc, dict):
-        doc = [x.to_dict() for x in doc][0]
-    data = {'value': {'fields':
+    if isinstance(doc, list):
+        n_docs = doc
+    elif not isinstance(doc, dict):
+        n_docs = [x.to_dict() for x in doc]
+    else:
+        n_docs = [doc]
+    data = [{'value': {'fields':
         {key: default_to_json(value) for key, value in doc.items()}
-    }}
+    }} for doc in n_docs]
     return data
 
-def resample_raw_window(sig: list, fs_old: int, fs_new: int, t: float = 2.048) -> list:
+def resample_frame(sig: list, fs_old: int, fs_new: int, t: float) -> Tuple[list, int]:
     """Resample a signal to a new sampling rate. This is done with the context
        of a reference length of time in order to produce a result that is
        evenly divisible by the window length (at the new sampling rate).
@@ -35,19 +53,20 @@ def resample_raw_window(sig: list, fs_old: int, fs_new: int, t: float = 2.048) -
         sig (list): Data.
         fs_old (int): Old sampling rate.
         fs_new (int): New sampling rate.
-        t (float, optional): Window length in seconds. Defaults to 2.048.
+        t (float, optional): Window length in seconds.
 
     Returns:
         resamp (list): Resampled signal.
     """
     old_win_len = fs_old * t
     new_win_len = fs_new * t
-    n = int( (len(sig) / old_win_len) * new_win_len )
-    resamp = signal.resample(sig, n)
-    resamp = list(resamp)
-    return resamp
+    n_windows = int(len(sig) / old_win_len)
+    n_samples = int(n_windows * new_win_len)
+    resamp = signal.resample(sig, n_samples)
+    resamp = resamp.tolist()
+    return (resamp, n_windows)
 
-def split_raw_window(sig: list, n: int) -> list:
+def split_frame(sig: list, n: int) -> list:
     """Split list into n lists.
 
     Args:
@@ -58,5 +77,24 @@ def split_raw_window(sig: list, n: int) -> list:
         n_sigs (list): Data split in to n lists.
     """
     sig = np.array(sig, dtype=np.float32)
-    n_sigs = [list(s) for s in np.split(sig, n)]
+    n_sigs = [s.tolist() for s in np.split(sig, n)]
     return n_sigs
+
+def generate_sample_document(samples: list, uid: str, fid: str) -> dict:
+    for s in samples:
+        doc = {
+            'uid': str(uid),
+            'sid': str(hash_obj(s)),
+            'fid': str(fid),
+            'status': 'new',
+            'ppg_raw': list(s),
+            'ppg': [0],
+            'vpg': [0],
+            'apg': [0],
+            'ppg_scaled': [0],
+            'vpg_scaled': [0],
+            'apg_scaled': [0],
+            'abp_scaled': [0],
+            'abp': [0],
+        }
+        yield doc

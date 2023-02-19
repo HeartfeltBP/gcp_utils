@@ -25,15 +25,14 @@ def _get_inputs(data) -> dict:
     """Takes data from firestore in JSON format and formats as model instance.
 
     Args:
-        data (_type_): _description_
+        data: Firestore document data.
 
     Returns:
-        dict: _description_
+        dict: Instance for inference.
     """
-    # TODO Fix input test data (wrong size)
-    ppg = np.array([float(x['doubleValue']) for x in data["value"]["fields"]["ppg_scaled"]["arrayValue"]['values']][0:256], dtype=np.float32)
-    vpg = np.array([float(x['doubleValue']) for x in data["value"]["fields"]["vpg_scaled"]["arrayValue"]['values']][0:256], dtype=np.float32)
-    apg = np.array([float(x['doubleValue']) for x in data["value"]["fields"]["apg_scaled"]["arrayValue"]['values']][0:256], dtype=np.float32)
+    ppg = np.array([float(x['doubleValue']) for x in data["value"]["fields"]["ppg_scaled"]["arrayValue"]['values']], dtype=np.float32)
+    vpg = np.array([float(x['doubleValue']) for x in data["value"]["fields"]["vpg_scaled"]["arrayValue"]['values']], dtype=np.float32)
+    apg = np.array([float(x['doubleValue']) for x in data["value"]["fields"]["apg_scaled"]["arrayValue"]['values']], dtype=np.float32)
     instances = [{
         'ppg': ppg.reshape(256, 1).tolist(),
         'vpg': vpg.reshape(256, 1).tolist(),

@@ -2,14 +2,35 @@ from google.cloud import firestore
 from gcp_utils import constants
 from gcp_utils.tools.preprocess import validate_window
 from gcp_utils.tools.predict import predict_bp
+from gcp_utils.tools.utils import get_document_context, resample_frame, split_frame, generate_sample_document
 
 client = firestore.Client()
 
+# Split incoming frames (frames collection)
+def onNewFrame(data, context):
+    collection_path, document_path = get_document_context(context)
+
+    affected_doc = client.collection(collection_path).document(document_path)
+    frame = [float(x['doubleValue']) for x in data["value"]["fields"]["frame"]["arrayValue"]['values']]
+    uid = str(data["value"]["fields"]["uid"]["stringValue"])
+    fid = str(data["value"]["fields"]["fid"]["stringValue"])
+    target = str(data["value"]["fields"]["target"]["stringValue"])
+
+    frame_resamp, n_windows = resample_frame(sig=frame, fs_old=200, fs_new=125, t=2.048)
+    samples = split_frame(sig=frame_resamp, n=n_windows)
+    processed_frame = [s for s in generate_sample_document(samples, uid, fid)]
+
+    col = client.collection(target)
+    for s in processed_frame:
+        col.add(s)
+
+    affected_doc.update({
+        u'status': 'processed'
+    })
+
 # Validate window
 def onNewSample(data, context):
-    path_parts = context.resource.split('/documents/')[1].split('/')
-    collection_path = path_parts[0]
-    document_path = '/'.join(path_parts[1:])
+    collection_path, document_path = get_document_context(context)
 
     affected_doc = client.collection(collection_path).document(document_path)
     ppg_raw = [float(x['doubleValue']) for x in data["value"]["fields"]["ppg_raw"]["arrayValue"]['values']]
@@ -30,9 +51,7 @@ def onNewSample(data, context):
 
 # Make prediction on ppg using enceladus (vital-bee-206-serving)
 def onValidSample(data, context):
-    path_parts = context.resource.split('/documents/')[1].split('/')
-    collection_path = path_parts[0]
-    document_path = '/'.join(path_parts[1:])
+    collection_path, document_path = get_document_context(context)
 
     affected_doc = client.collection(collection_path).document(document_path)
 

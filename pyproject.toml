@@ -26,6 +26,7 @@ pytest = "^7.2.1"
 mock = "^5.0.1"
 mock-firestore = "^0.11.0"
 nbformat = "^5.7.3"
+deepdiff = "^6.2.3"
 
 [build-system]
 requires = ["poetry-core"]
