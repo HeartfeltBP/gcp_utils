@@ -14,7 +14,7 @@ def test_onNewSample():
 
     # Add raw valid sample to collection (and get document id)
     col.add(constants.RAW_VALID_SAMPLE)
-    doc = [x for x in col.where(u'sample_id', u'==', u'123456789').stream()][0]
+    doc = [x for x in col.where(u'sid', u'==', u'123456789').stream()][0]
     context.resource = '/databases/documents/heartfelt_data/' + str(doc.id)
 
     # Convert to JSON dictionary and test cloud function
@@ -25,7 +25,7 @@ def test_onNewSample():
     expected_data = format_as_json(constants.processed_valid_sample())
 
     # Get processed data from firebase and compare
-    doc = col.where(u'sample_id', u'==', u'123456789').stream()
+    doc = col.where(u'sid', u'==', u'123456789').stream()
     data = format_as_json(doc)
     assert data == expected_data
 
@@ -35,11 +35,11 @@ def test_onValidSample():
     col = database.collection(u'heartfelt_data')
 
     # Get test sample data
-    doc = col.where(u'sample_id', u'==', u'123456789').stream()
+    doc = col.where(u'sid', u'==', u'123456789').stream()
     data = format_as_json(doc)
 
     # Get context
-    doc = [x for x in col.where(u'sample_id', u'==', u'123456789').stream()][0]
+    doc = [x for x in col.where(u'sid', u'==', u'123456789').stream()][0]
     context.resource = '/databases/documents/heartfelt_data/' + str(doc.id)
 
     # Test cloud function
@@ -49,6 +49,6 @@ def test_onValidSample():
     expected_data = format_as_json(constants.predicted_sample())
 
     # Get prediction from firebase and compare
-    doc = col.where(u'sample_id', u'==', u'123456789').stream()
+    doc = col.where(u'sid', u'==', u'123456789').stream()
     data = format_as_json(doc)
     assert data == expected_data
