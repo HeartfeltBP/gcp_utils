@@ -8,15 +8,17 @@ from main import onNewFrame, onNewSample, onValidSample
 
 initialize_app()
 
+UID = 'wx1jF08b3DTPijtQcwGiEwpEFai2'
+
 def test_onNewFrame():
     context = mock.Mock()
     database = firestore.client()
-    col = database.collection(u'bpm_data_test').document(u'test_user').collection(u'frames')
+    col = database.collection(u'bpm_data_test').document(UID).collection(u'frames')
 
     # Add frame
     col.add(constants.BPM_FRAME)
     doc = [x for x in col.where(u'fid', u'==', u'987654321').stream()][0]
-    context.resource = 'databases/documents/bpm_data_test/test_user/frames/' + str(doc.id)
+    context.resource = f'databases/documents/bpm_data_test/{UID}/frames/' + str(doc.id)
 
     # Convert to JSON and test cloud function
     data = format_as_json(constants.BPM_FRAME)[0]  # dict
@@ -26,7 +28,7 @@ def test_onNewFrame():
     expected_data = format_as_json(constants.processed_frame())
 
     # Get processed data from firebase and compare
-    col = database.collection(u'bpm_data_test').document(u'test_user').collection(u'samples')
+    col = database.collection(u'bpm_data_test').document(UID).collection(u'samples')
     doc_gen = col.where(u'fid', u'==', u'987654321').stream()
     cloud_data = format_as_json(doc_gen)  # multiple docs
     case = unittest.TestCase()
@@ -35,12 +37,12 @@ def test_onNewFrame():
 def test_onNewSample():
     context = mock.Mock()
     database = firestore.client()
-    col = database.collection(u'bpm_data_test').document(u'test_user').collection(u'samples')
+    col = database.collection(u'bpm_data_test').document(UID).collection(u'samples')
 
     # Add raw valid sample to collection (and get document id)
     col.add(constants.RAW_VALID_SAMPLE)
     doc = [x for x in col.where(u'sid', u'==', u'123456789').stream()][0]
-    context.resource = '/databases/documents/bpm_data_test/test_user/samples/' + str(doc.id)
+    context.resource = f'/databases/documents/bpm_data_test/{UID}/samples/' + str(doc.id)
 
     # Convert to JSON dictionary and test cloud function
     data = format_as_json(constants.RAW_VALID_SAMPLE)[0]  # dict
@@ -57,7 +59,7 @@ def test_onNewSample():
 def test_onValidSample():
     context = mock.Mock()
     database = firestore.client()
-    col = database.collection(u'bpm_data_test').document(u'test_user').collection(u'samples')
+    col = database.collection(u'bpm_data_test').document(UID).collection(u'samples')
 
     # Get test sample data
     doc = col.where(u'sid', u'==', u'123456789').stream()
@@ -65,7 +67,7 @@ def test_onValidSample():
 
     # Get context
     doc = [x for x in col.where(u'sid', u'==', u'123456789').stream()][0]
-    context.resource = '/databases/documents/bpm_data_test/test_user/samples/' + str(doc.id)
+    context.resource = f'/databases/documents/bpm_data_test/{UID}/samples/' + str(doc.id)
 
     # Test cloud function
     onValidSample(data, context)
