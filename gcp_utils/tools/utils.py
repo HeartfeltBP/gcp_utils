@@ -29,6 +29,8 @@ def default_to_json(x):
     elif isinstance(x, list):
         data = {'arrayValue': {'values': [{'doubleValue': xx} for xx in x]}}
         return data
+    elif isinstance(x, float):
+        data = {'floatValue': x}
     else:
         raise TypeError(f'Type \'{type(x)}\' is not a supported type')
 
@@ -80,10 +82,9 @@ def split_frame(sig: list, n: int) -> list:
     n_sigs = [s.tolist() for s in np.split(sig, n)]
     return n_sigs
 
-def generate_sample_document(samples: list, uid: str, fid: str) -> dict:
+def generate_sample_document(samples: list, fid: str) -> dict:
     for s in samples:
         doc = {
-            'uid': str(uid),
             'sid': str(hash_obj(s)),
             'fid': str(fid),
             'status': 'new',

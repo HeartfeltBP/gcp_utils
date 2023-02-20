@@ -12,13 +12,12 @@ def onNewFrame(data, context):
 
     affected_doc = client.collection(collection_path).document(document_path)
     frame = [float(x['doubleValue']) for x in data["value"]["fields"]["frame"]["arrayValue"]['values']]
-    uid = str(data["value"]["fields"]["uid"]["stringValue"])
     fid = str(data["value"]["fields"]["fid"]["stringValue"])
     target = str(data["value"]["fields"]["target"]["stringValue"])
 
     frame_resamp, n_windows = resample_frame(sig=frame, fs_old=200, fs_new=125, t=2.048)
     samples = split_frame(sig=frame_resamp, n=n_windows)
-    processed_frame = [s for s in generate_sample_document(samples, uid, fid)]
+    processed_frame = [s for s in generate_sample_document(samples, fid)]
 
     col = client.collection(target)
     for s in processed_frame:
