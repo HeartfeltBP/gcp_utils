@@ -19,7 +19,7 @@ def onNewFrame(data, context):
     samples = split_frame(sig=frame_resamp, n=n_windows)
     processed_frame = [s for s in generate_sample_document(samples, fid)]
 
-    col = client.collection(target)
+    col = client.collection(target).document(document_path.split('/')[0]).collection(u'samples')
     for s in processed_frame:
         col.add(s)
 
