@@ -47,6 +47,9 @@ def onNewSample(data, context):
         u'ppg_scaled': result['ppg_scaled'],
         u'vpg_scaled': result['vpg_scaled'],
         u'apg_scaled': result['apg_scaled'],
+        u'hr': result['hr'],
+        u'snr': result['snr'],
+        u'beat_sim': result['beat_sim'],
     })
 
 # Make prediction on ppg using enceladus (vital-bee-206-serving)
