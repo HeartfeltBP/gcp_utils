@@ -39,6 +39,9 @@ RAW_VALID_SAMPLE = {
     'apg_scaled': [0],
     'abp_scaled': [0],
     'abp': [0],
+    'hr': 0,
+    'snr': 0,
+    'beat_sim': 0,
 }
 
 def processed_frame():

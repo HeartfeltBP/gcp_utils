@@ -97,5 +97,8 @@ def generate_sample_document(samples: list, fid: str) -> dict:
             'apg_scaled': [0],
             'abp_scaled': [0],
             'abp': [0],
+            'hr': 0,
+            'snr': 0,
+            'beat_sim': 0,
         }
         yield doc
