@@ -6,7 +6,7 @@ from google.protobuf import json_format
 from google.protobuf.struct_pb2 import Value
 from neurokit2.ppg.ppg_findpeaks import _ppg_findpeaks_bishop
 
-def predict_cardiac_values(frame: List[list, list], fs: int) -> Tuple[int, float, float]:
+def predict_cardiac_values(frame: List[list], fs: int) -> Tuple[int, float, float]:
     ppg_red = frame[0]
     ppg_ir = frame[1]
     try:
