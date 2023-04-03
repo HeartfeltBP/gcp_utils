@@ -69,7 +69,7 @@ def onNewWindow(data, context):
         u'beat_sim': result['beat_sim'],
     })
 
-def onValidSample(data, context):
+def onValidWindow(data, context):
     """Make BP prediction using model endpoint (vital-bee-206-serving)."""
     collection_path, document_path = get_document_context(context)
     affected_doc = client.collection(collection_path).document(document_path)

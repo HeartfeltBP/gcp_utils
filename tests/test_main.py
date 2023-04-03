@@ -4,10 +4,11 @@ from gcp_utils import constants
 from gcp_utils.tools.utils import format_as_json
 from firebase_admin import firestore, initialize_app
 
-from main import onNewFrame, onNewSample, onValidSample
+from main import onNewFrame, onNewWindow, onValidWindow
 
 initialize_app()
 
+# camhpjohnson@gmail.com
 UID = 'wx1jF08b3DTPijtQcwGiEwpEFai2'
 
 def test_onNewFrame():
@@ -34,7 +35,7 @@ def test_onNewFrame():
     case = unittest.TestCase()
     case.assertCountEqual(cloud_data, expected_data)
 
-def test_onNewSample():
+def test_onNewWindow():
     context = mock.Mock()
     database = firestore.client()
     col = database.collection(u'bpm_data_test').document(UID).collection(u'samples')
@@ -46,7 +47,7 @@ def test_onNewSample():
 
     # Convert to JSON dictionary and test cloud function
     data = format_as_json(constants.RAW_VALID_SAMPLE)[0]  # dict
-    onNewSample(data, context)
+    onNewWindow(data, context)
 
     # Get expected result
     expected_data = format_as_json(constants.processed_valid_sample())[0]
@@ -56,7 +57,7 @@ def test_onNewSample():
     cloud_data = format_as_json(doc)[0]  # single doc
     assert cloud_data == expected_data
 
-def test_onValidSample():
+def test_onValidWindow():
     context = mock.Mock()
     database = firestore.client()
     col = database.collection(u'bpm_data_test').document(UID).collection(u'samples')
@@ -70,7 +71,7 @@ def test_onValidSample():
     context.resource = f'/databases/documents/bpm_data_test/{UID}/samples/' + str(doc.id)
 
     # Test cloud function
-    onValidSample(data, context)
+    onValidWindow(data, context)
 
     # Get expected result
     expected_data = format_as_json(constants.predicted_sample())[0]  # dict
