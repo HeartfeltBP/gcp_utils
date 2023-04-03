@@ -4,6 +4,15 @@ from typing import Tuple
 from database_tools.preprocessing.datastores import ConfigMapper, Window
 from database_tools.preprocessing.functions import bandpass
 
+def flip_and_combine(frame):
+    """Flip raw PPG data and combine IR and RED wavelengths.
+       Data should be filtered prior to calling this function.
+    """
+    red_flip = np.max(frame[0]) - frame[0]
+    ir_flip = np.max(frame[1]) - frame[1]
+    combined = (red_flip + ir_flip) / 2  # averaging strategy
+    return combined
+
 def validate_window(
     ppg: list,
     config: dict,

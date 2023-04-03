@@ -1,9 +1,10 @@
 from google.cloud import firestore
 from gcp_utils import constants
-from gcp_utils.tools.preprocess import validate_window
-from gcp_utils.tools.predict import predict_bp
+from gcp_utils.tools.preprocess import validate_window, flip_and_combine
+from gcp_utils.tools.predict import predict_bp, predict_cardiac_values
 from gcp_utils.tools.utils import get_document_context, resample_frame, split_frame, generate_sample_document
 from gcp_utils.constants import CONFIG
+from database_tools.preprocessing.functions import bandpass
 
 client = firestore.Client()
 
@@ -21,7 +22,8 @@ def onNewFrame(data, context):
     affected_doc = client.collection(collection_path).document(document_path)
 
     # New long form frame from BPM device
-    frame = [float(x['doubleValue']) for x in data["value"]["fields"]["frame"]["arrayValue"]['values']]
+    red_frame = [float(x['doubleValue']) for x in data["value"]["fields"]["red_frame"]["arrayValue"]['values']]
+    ir_frame = [float(x['doubleValue']) for x in data["value"]["fields"]["ir_frame"]["arrayValue"]['values']]
 
     # Frame ID (uid)
     fid = str(data["value"]["fields"]["fid"]["stringValue"])
@@ -30,7 +32,14 @@ def onNewFrame(data, context):
     target = str(data["value"]["fields"]["target"]["stringValue"])
 
     # Processing steps
-    frame_resamp = resample_frame(sig=frame, fs_old=200, fs_new=125)
+    red_frame_filt = bandpass(red_frame, low=CONFIG['freq_band'][0], high=CONFIG['freq_band'][1], fs=CONFIG['bpm_fs']).tolist()
+    ir_frame_filt = bandpass(ir_frame, low=CONFIG['freq_band'][0], high=CONFIG['freq_band'][1], fs=CONFIG['bpm_fs']).tolist()
+    frame_filt = [red_frame_filt, ir_frame_filt]
+
+    pulse_rate, spo2, r = predict_cardiac_values(frame_filt, fs=CONFIG['bpm_fs'])
+
+    flipped_combined = flip_and_combine(frame_filt)
+    frame_resamp = resample_frame(sig=flipped_combined, fs_old=CONFIG['bpm_fs'], fs_new=CONFIG['fs'])
     samples = split_frame(sig=frame_resamp, n=int(len(frame_resamp) / CONFIG['win_len']))
     processed_frame = [s for s in generate_sample_document(samples, fid)]
 
@@ -39,7 +48,10 @@ def onNewFrame(data, context):
         col.add(s)
 
     affected_doc.update({
-        u'status': 'processed'
+        u'status': 'processed',
+        u'pulse_rate': int(pulse_rate),
+        u'spo2': float(spo2),
+        u'r': float(r),
     })
 
 def onNewWindow(data, context):
