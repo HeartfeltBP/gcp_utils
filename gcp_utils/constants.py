@@ -55,7 +55,7 @@ def processed_frame():
     processed_frame = [doc for doc in generate_sample_document(samples, BPM_FRAME['fid'])]
     return processed_frame
 
-def processed_valid_sample():
+def processed_valid_window():
     result = validate_window(RAW_VALID_SAMPLE['ppg_raw'], CONFIG)
     processed_valid_sample = {
         'sid': '123456789',
@@ -76,8 +76,8 @@ def processed_valid_sample():
     }
     return processed_valid_sample
 
-def predicted_sample():
-    processed_sample = processed_valid_sample()
+def predicted_window():
+    processed_sample = processed_valid_window()
     data = format_as_json(processed_sample)[0]
     result = predict_bp(data, CONFIG)
     predicted_sample = processed_sample

@@ -50,7 +50,7 @@ def test_onNewWindow():
     onNewWindow(data, context)
 
     # Get expected result
-    expected_data = format_as_json(constants.processed_valid_sample())[0]
+    expected_data = format_as_json(constants.processed_valid_window())[0]
 
     # Get processed data from firebase and compare
     doc = col.where(u'sid', u'==', u'123456789').stream()
@@ -74,7 +74,7 @@ def test_onValidWindow():
     onValidWindow(data, context)
 
     # Get expected result
-    expected_data = format_as_json(constants.predicted_sample())[0]  # dict
+    expected_data = format_as_json(constants.predicted_window())[0]  # dict
 
     # Get prediction from firebase and compare
     doc = col.where(u'sid', u'==', u'123456789').stream()
