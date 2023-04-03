@@ -28,7 +28,7 @@ def validate_window(
         'ppg_scaled': list(ppg_s),
         'vpg_scaled': list(vpg_s),
         'apg_scaled': list(apg_s),
-        'hr': float(win.f0 * 60),
+        'f0': float(win.f0),
         'snr': float(win.snr),
         'beat_sim': float(win.beat_sim),
     }
