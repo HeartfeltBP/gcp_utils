@@ -3,20 +3,49 @@ import pickle as pkl
 from typing import Tuple
 from database_tools.preprocessing.datastores import ConfigMapper, Window
 from database_tools.preprocessing.functions import bandpass
+from database_tools.preprocessing.utils import resample_signal
 
-def flip_and_combine(frame):
-    """Flip raw PPG data and combine IR and RED wavelengths.
-       Data should be filtered prior to calling this function.
+def process_frame(red_frame, ir_frame, config):
+    cm = ConfigMapper(config)
+    red_filt = bandpass(red_frame, low=cm.freq_band[0], high=cm.freq_band[1], fs=cm.bpm_fs)
+    ir_filt = bandpass(ir_frame, low=cm.freq_band[0], high=cm.freq_band[1], fs=cm.bpm_fs)
+
+    red_filt_flip = _flip_signal(red_filt)
+    ir_filt_flip = _flip_signal(ir_filt)
+    combined = (red_filt_flip + ir_filt_flip) / 2  # averaging strategy
+
+    combined_resamp = resample_signal(sig=combined, fs_old=cm.bpm_fs, fs_new=cm.bpm_fs)
+    windows = _split_frame(sig=combined_resamp, n=int(len(combined_resamp) / cm.win_len))
+    result = {
+        'red_frame_for_processing': list(red_filt),
+        'ir_frame_for_processing': list(ir_filt),
+        'red_frame_for_presentation': list(red_filt_flip),
+        'ir_frame_for_presentation': list(ir_filt_flip),
+        'combined_frame_for_presentation': list(combined),
+        'windows': windows,
+    }
+    return result
+
+def _flip_signal(sig):
+    """Flip signal data but subtracting the maximum value."""
+    flipped = np.max(sig[0]) - sig[0]
+    return flipped
+
+def _split_frame(sig: list, n: int) -> list:
+    """Split list into n lists.
+
+    Args:
+        sig (list): Data.
+        n (int): Number of lists.
+
+    Returns:
+        n_sigs (list): Data split in to n lists.
     """
-    red_flip = np.max(frame[0]) - frame[0]
-    ir_flip = np.max(frame[1]) - frame[1]
-    combined = (red_flip + ir_flip) / 2  # averaging strategy
-    return combined
+    sig = np.array(sig, dtype=np.float32)
+    n_sigs = [s.tolist() for s in np.split(sig, n)]
+    return n_sigs
 
-def validate_window(
-    ppg: list,
-    config: dict,
-) -> dict:
+def validate_window(ppg: list, config: dict) -> dict:
     cm = ConfigMapper(config)
 
     ppg = np.array(ppg, dtype=np.float32)

@@ -47,38 +47,6 @@ def format_as_json(doc) -> dict:
     }} for doc in n_docs]
     return data
 
-def resample_frame(sig: list, fs_old: int, fs_new: int) -> Tuple[list, int]:
-    """Resample a signal to a new sampling rate. This is done with the context
-       of a reference length of time in order to produce a result that is
-       evenly divisible by the window length (at the new sampling rate).
-
-    Args:
-        sig (list): Data.
-        fs_old (int): Old sampling rate.
-        fs_new (int): New sampling rate.
-
-    Returns:
-        resamp (list): Resampled signal.
-    """
-    frame_len = len(sig)
-    frame_time = frame_len / fs_old
-    resamp = signal.resample(sig, int(round(frame_time * fs_new, -1))).tolist()
-    return resamp
-
-def split_frame(sig: list, n: int) -> list:
-    """Split list into n lists.
-
-    Args:
-        sig (list): Data.
-        n (int): Number of lists.
-
-    Returns:
-        n_sigs (list): Data split in to n lists.
-    """
-    sig = np.array(sig, dtype=np.float32)
-    n_sigs = [s.tolist() for s in np.split(sig, n)]
-    return n_sigs
-
 def generate_window_document(samples: list, fid: str) -> dict:
     for s in samples:
         doc = {

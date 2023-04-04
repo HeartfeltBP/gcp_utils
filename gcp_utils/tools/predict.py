@@ -4,55 +4,21 @@ from typing import Dict, List, Union, Tuple
 from google.cloud import aiplatform
 from google.protobuf import json_format
 from google.protobuf.struct_pb2 import Value
-from neurokit2.ppg.ppg_findpeaks import _ppg_findpeaks_bishop
+from database_tools.preprocessing.cardiac import estimate_pulse_rate, estimate_spo2
+from database_tools.preprocessing.functions import find_peaks
 
-def predict_cardiac_values(frame: List[list], fs: int) -> Tuple[int, float, float]:
-    ppg_red = frame[0]
-    ppg_ir = frame[1]
+def predict_cardiac_metrics(red, ir, fs):
+    red_idx = find_peaks(np.array(red))
+    ir_idx = find_peaks(np.array(ir))
 
-    red_idx = _find_peaks(ppg_red)
-    ir_idx = _find_peaks(ppg_ir)
-
-    pulse_rate_multiplier = 60 / (len(ppg_red) / fs)
-    pulse_rate = int(len(red_idx['peaks']) * pulse_rate_multiplier)
-
-    spo2, r = _predict_spo2(ppg_red, ppg_ir, red_idx, ir_idx)
-    return (pulse_rate, spo2, r)
-
-def _predict_spo2(ppg_red: list, ppg_ir: list, red_idx, ir_idx) -> Tuple[float, float]:
-    """Estimate absorbtion and SpO2.
-
-    Args:
-        ppg_red (list): PPG data (red LED).
-        ppg_ir (list): PPG data (infrared LED).
-        red_idx (dict): Peak data for ppg_red.
-        ir_idx (dict): Peak data for ppg_ir.
-
-    Returns:
-        spo2 (float): SpO2 as a percentage.
-        r (float): Absorption.
-    """
-    ppg_red = np.array(ppg_red)
-    ppg_ir = np.array(ppg_ir)
-    red_peaks, red_troughs = red_idx['peaks'], red_idx['troughs']
-    red_high, red_low = np.max(ppg_red[red_peaks]), np.min(ppg_red[red_troughs])
-
-    ir_peaks, ir_troughs = ir_idx['peaks'], ir_idx['troughs']
-    ir_high, ir_low = np.max(ppg_ir[ir_peaks]), np.min(ppg_ir[ir_troughs])
-
-    ac_red = red_high - red_low
-    ac_ir = ir_high - ir_low
-
-    r = ( ac_red / red_low ) / ( ac_ir / ir_low )
-    spo2 = round(104 - (17 * r), 1)
-    return (spo2, r)
-
-def _find_peaks(ppg_cleaned, show=False, **kwargs):
-    """Modified version of neuroki2 ppg_findpeaks method. Returns peaks and troughs
-       instead of just peaks. See neurokit2 documentation for original function.
-    """
-    peaks, troughs = _ppg_findpeaks_bishop(ppg_cleaned, show=show, **kwargs)
-    return dict(peaks=peaks[0], troughs=troughs[0])
+    pulse_rate = estimate_pulse_rate(red, ir, red_idx, ir_idx, fs=fs)
+    spo2, r = estimate_spo2(red, ir, red_idx, ir_idx)
+    result = {
+        'pulse_rate': int(pulse_rate),
+        'spo2': float(spo2),
+        'r': float(r)
+    }
+    return result
 
 def predict_bp(data, config):
     instances = _get_inputs(data)

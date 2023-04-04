@@ -1,8 +1,8 @@
 from google.cloud import firestore
 from gcp_utils import constants
-from gcp_utils.tools.preprocess import validate_window, flip_and_combine
-from gcp_utils.tools.predict import predict_bp, predict_cardiac_values
-from gcp_utils.tools.utils import get_document_context, resample_frame, split_frame, generate_window_document
+from gcp_utils.tools.preprocess import validate_window, process_frame
+from gcp_utils.tools.predict import predict_bp, predict_cardiac_metrics
+from gcp_utils.tools.utils import get_document_context, generate_window_document
 from gcp_utils.constants import CONFIG
 from database_tools.preprocessing.functions import bandpass
 
@@ -32,26 +32,26 @@ def onNewFrame(data, context):
     target = str(data["value"]["fields"]["target"]["stringValue"])
 
     # Processing steps
-    red_frame_filt = bandpass(red_frame, low=CONFIG['freq_band'][0], high=CONFIG['freq_band'][1], fs=CONFIG['bpm_fs']).tolist()
-    ir_frame_filt = bandpass(ir_frame, low=CONFIG['freq_band'][0], high=CONFIG['freq_band'][1], fs=CONFIG['bpm_fs']).tolist()
-    frame_filt = [red_frame_filt, ir_frame_filt]
-
-    pulse_rate, spo2, r = predict_cardiac_values(frame_filt, fs=CONFIG['bpm_fs'])
-
-    flipped_combined = flip_and_combine(frame_filt)
-    frame_resamp = resample_frame(sig=flipped_combined, fs_old=CONFIG['bpm_fs'], fs_new=CONFIG['fs'])
-    samples = split_frame(sig=frame_resamp, n=int(len(frame_resamp) / CONFIG['win_len']))
-    processed_frame = [s for s in generate_window_document(samples, fid)]
+    processed = process_frame(red_frame, ir_frame, config=CONFIG)
+    cardiac_metrics = predict_cardiac_metrics(
+        red=processed['red_frame_for_processing'],
+        ir=processed['ir_frame_for_processing'],
+        fs=CONFIG['bpm_fs'],
+    )
+    windows = [s for s in generate_window_document(processed['windows'], fid)]
 
     col = client.collection(target).document(document_path.split('/')[0]).collection(u'windows')
-    for s in processed_frame:
-        col.add(s)
+    for w in windows:
+        col.add(w)
 
     affected_doc.update({
         u'status': 'processed',
-        u'pulse_rate': int(pulse_rate),
-        u'spo2': float(spo2),
-        u'r': float(r),
+        u'red_frame_for_presentation': processed['red_frame_for_presentation'],
+        u'ir_frame_for_presentation': processed['ir_frame_for_presentation'],
+        u'combined_for_presentation': processed['combined_frame_for_processing'],
+        u'pulse_rate': cardiac_metrics['pulse_rate'],
+        u'spo2': cardiac_metrics['spo2'],
+        u'r': cardiac_metrics['r'],
     })
 
 def onNewWindow(data, context):
