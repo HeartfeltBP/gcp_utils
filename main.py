@@ -57,7 +57,7 @@ def onUpdateFrame(data, context):
             u'r': cardiac_metrics['r'],
         })
 
-def onNewWindow(data, context):
+def onCreateWindow(data, context):
     """Validate new windows."""
     collection_path, document_path = get_document_context(context)
     affected_doc = client.collection(collection_path).document(document_path)

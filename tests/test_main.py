@@ -4,7 +4,7 @@ from gcp_utils import constants
 from gcp_utils.tools.utils import format_as_json
 from firebase_admin import firestore, initialize_app
 
-from main import onUpdateFrame, onNewWindow, onUpdateWindow
+from main import onUpdateFrame, onCreateWindow, onUpdateWindow
 
 initialize_app()
 
@@ -53,7 +53,7 @@ def test_onNewWindow():
 
     # Convert to JSON dictionary and test cloud function
     data = format_as_json(constants.RAW_VALID_WINDOW)[0]  # dict
-    onNewWindow(data, context)
+    onCreateWindow(data, context)
 
     # Get expected result
     expected_processed_window = format_as_json(constants.processed_valid_window())[0]
