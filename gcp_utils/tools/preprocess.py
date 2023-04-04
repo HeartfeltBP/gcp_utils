@@ -14,8 +14,9 @@ def process_frame(red_frame, ir_frame, config):
     ir_filt_flip = _flip_signal(ir_filt)
     combined = (red_filt_flip + ir_filt_flip) / 2  # averaging strategy
 
-    combined_resamp = resample_signal(sig=combined.reshape(-1).tolist(), fs_old=cm.bpm_fs, fs_new=cm.bpm_fs)
-    windows = _split_frame(sig=combined_resamp, n=int(len(combined_resamp) / cm.win_len))
+    combined_resamp = resample_signal(sig=combined.tolist(), fs_old=cm.bpm_fs, fs_new=cm.fs)
+
+    windows = _split_frame(sig=combined_resamp, n=int(combined_resamp.shape[0] / cm.win_len))
     result = {
         'red_frame_for_processing': list(red_filt),
         'ir_frame_for_processing': list(ir_filt),
@@ -28,10 +29,10 @@ def process_frame(red_frame, ir_frame, config):
 
 def _flip_signal(sig):
     """Flip signal data but subtracting the maximum value."""
-    flipped = np.max(sig[0]) - sig[0]
+    flipped = np.max(sig) - sig
     return flipped
 
-def _split_frame(sig: list, n: int) -> list:
+def _split_frame(sig: np.ndarray, n: int) -> list:
     """Split list into n lists.
 
     Args:
@@ -41,7 +42,6 @@ def _split_frame(sig: list, n: int) -> list:
     Returns:
         n_sigs (list): Data split in to n lists.
     """
-    sig = np.array(sig, dtype=np.float32)
     n_sigs = [s.tolist() for s in np.split(sig, n)]
     return n_sigs
 
