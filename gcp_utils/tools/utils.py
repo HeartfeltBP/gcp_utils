@@ -1,8 +1,5 @@
 import json
 import hashlib
-import numpy as np
-from scipy import signal
-from typing import Tuple
 
 def hash_obj(obj):
     uid = hashlib.sha256(
@@ -47,13 +44,13 @@ def format_as_json(doc) -> dict:
     }} for doc in n_docs]
     return data
 
-def generate_window_document(samples: list, fid: str) -> dict:
-    for s in samples:
+def generate_window_document(windows: list, fid: str) -> dict:
+    for w in windows:
         doc = {
-            'sid': str(hash_obj(s)),
+            'sid': str(hash_obj(w)),
             'fid': str(fid),
             'status': 'new',
-            'ppg_raw': list(s),
+            'ppg_raw': list(w),
             'ppg': [0],
             'vpg': [0],
             'apg': [0],
