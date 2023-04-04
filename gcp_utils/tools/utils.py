@@ -31,6 +31,7 @@ def default_to_json(x):
         return data
     elif isinstance(x, float):
         data = {'floatValue': x}
+        return data
     else:
         raise TypeError(f'Type \'{type(x)}\' is not a supported type')
 
@@ -78,7 +79,7 @@ def split_frame(sig: list, n: int) -> list:
     n_sigs = [s.tolist() for s in np.split(sig, n)]
     return n_sigs
 
-def generate_sample_document(samples: list, fid: str) -> dict:
+def generate_window_document(samples: list, fid: str) -> dict:
     for s in samples:
         doc = {
             'sid': str(hash_obj(s)),
@@ -93,7 +94,7 @@ def generate_sample_document(samples: list, fid: str) -> dict:
             'apg_scaled': [0],
             'abp_scaled': [0],
             'abp': [0],
-            'hr': 0,
+            'f0': 0,
             'snr': 0,
             'beat_sim': 0,
         }

@@ -9,19 +9,17 @@ from neurokit2.ppg.ppg_findpeaks import _ppg_findpeaks_bishop
 def predict_cardiac_values(frame: List[list], fs: int) -> Tuple[int, float, float]:
     ppg_red = frame[0]
     ppg_ir = frame[1]
-    try:
-        red_idx = _find_peaks(ppg_red)
-        ir_idx = _find_peaks(ppg_ir)
 
-        pulse_rate_multiplier = 60 / (len(frame) / fs)
-        pulse_rate = int(len(red_idx) * pulse_rate_multiplier)
+    red_idx = _find_peaks(ppg_red)
+    ir_idx = _find_peaks(ppg_ir)
 
-        spo2, r = _predict_spo2(ppg_red, ppg_ir, red_idx, ir_idx)
-        return (pulse_rate, spo2, r)
-    except Exception as e:
-        return (-1, -1, -1)
+    pulse_rate_multiplier = 60 / (len(ppg_red) / fs)
+    pulse_rate = int(len(red_idx['peaks']) * pulse_rate_multiplier)
 
-def _predict_spo2(ppg_red, ppg_ir, red_idx, ir_idx) -> Tuple[float, float]:
+    spo2, r = _predict_spo2(ppg_red, ppg_ir, red_idx, ir_idx)
+    return (pulse_rate, spo2, r)
+
+def _predict_spo2(ppg_red: list, ppg_ir: list, red_idx, ir_idx) -> Tuple[float, float]:
     """Estimate absorbtion and SpO2.
 
     Args:
@@ -34,6 +32,8 @@ def _predict_spo2(ppg_red, ppg_ir, red_idx, ir_idx) -> Tuple[float, float]:
         spo2 (float): SpO2 as a percentage.
         r (float): Absorption.
     """
+    ppg_red = np.array(ppg_red)
+    ppg_ir = np.array(ppg_ir)
     red_peaks, red_troughs = red_idx['peaks'], red_idx['troughs']
     red_high, red_low = np.max(ppg_red[red_peaks]), np.min(ppg_red[red_troughs])
 
@@ -44,7 +44,7 @@ def _predict_spo2(ppg_red, ppg_ir, red_idx, ir_idx) -> Tuple[float, float]:
     ac_ir = ir_high - ir_low
 
     r = ( ac_red / red_low ) / ( ac_ir / ir_low )
-    spo2 = 104 - (17 * r)
+    spo2 = round(104 - (17 * r), 1)
     return (spo2, r)
 
 def _find_peaks(ppg_cleaned, show=False, **kwargs):

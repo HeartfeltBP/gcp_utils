@@ -2,7 +2,7 @@ from google.cloud import firestore
 from gcp_utils import constants
 from gcp_utils.tools.preprocess import validate_window, flip_and_combine
 from gcp_utils.tools.predict import predict_bp, predict_cardiac_values
-from gcp_utils.tools.utils import get_document_context, resample_frame, split_frame, generate_sample_document
+from gcp_utils.tools.utils import get_document_context, resample_frame, split_frame, generate_window_document
 from gcp_utils.constants import CONFIG
 from database_tools.preprocessing.functions import bandpass
 
@@ -41,7 +41,7 @@ def onNewFrame(data, context):
     flipped_combined = flip_and_combine(frame_filt)
     frame_resamp = resample_frame(sig=flipped_combined, fs_old=CONFIG['bpm_fs'], fs_new=CONFIG['fs'])
     samples = split_frame(sig=frame_resamp, n=int(len(frame_resamp) / CONFIG['win_len']))
-    processed_frame = [s for s in generate_sample_document(samples, fid)]
+    processed_frame = [s for s in generate_window_document(samples, fid)]
 
     col = client.collection(target).document(document_path.split('/')[0]).collection(u'windows')
     for s in processed_frame:
