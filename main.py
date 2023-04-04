@@ -4,7 +4,6 @@ from gcp_utils.tools.preprocess import validate_window, process_frame
 from gcp_utils.tools.predict import predict_bp, predict_cardiac_metrics
 from gcp_utils.tools.utils import get_document_context, generate_window_document
 from gcp_utils.constants import CONFIG
-from database_tools.preprocessing.functions import bandpass
 
 client = firestore.Client()
 
