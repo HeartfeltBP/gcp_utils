@@ -66,7 +66,7 @@ def processed_frame_and_windows():
         'status': 'processed',
         'red_frame_for_presentation': processed['red_frame_for_presentation'],
         'ir_frame_for_presentation': processed['ir_frame_for_presentation'],
-        'combined_for_presentation': processed['combined_frame_for_processing'],
+        'combined_frame_for_presentation': processed['combined_frame_for_presentation'],
         'pulse_rate': cardiac_metrics['pulse_rate'],
         'spo2': cardiac_metrics['spo2'],
         'r': cardiac_metrics['r'],

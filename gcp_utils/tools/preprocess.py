@@ -13,7 +13,6 @@ def process_frame(red_frame, ir_frame, config):
     red_filt_flip = _flip_signal(red_filt)
     ir_filt_flip = _flip_signal(ir_filt)
     combined = (red_filt_flip + ir_filt_flip) / 2  # averaging strategy
-
     combined_resamp = resample_signal(sig=combined.tolist(), fs_old=cm.bpm_fs, fs_new=cm.fs)
 
     windows = _split_frame(sig=combined_resamp, n=int(combined_resamp.shape[0] / cm.win_len))

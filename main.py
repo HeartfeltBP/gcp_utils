@@ -51,7 +51,7 @@ def onUpdateFrame(data, context):
             u'status': 'processed',
             u'red_frame_for_presentation': processed['red_frame_for_presentation'],
             u'ir_frame_for_presentation': processed['ir_frame_for_presentation'],
-            u'combined_for_presentation': processed['combined_frame_for_processing'],
+            u'combined_frame_for_presentation': processed['combined_frame_for_presentation'],
             u'pulse_rate': cardiac_metrics['pulse_rate'],
             u'spo2': cardiac_metrics['spo2'],
             u'r': cardiac_metrics['r'],
