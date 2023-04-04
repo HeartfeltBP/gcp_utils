@@ -21,9 +21,10 @@ def onUpdateFrame(data, context):
     collection_path, document_path = get_document_context(context)
     affected_doc = client.collection(collection_path).document(document_path)
 
-    has_red = (data["value"]["fields"]["status"]["red_frame"]["arrayValue"]["values"] != [])
-    has_ir = (data["value"]["fields"]["status"]["ir_frame"]["arrayValue"]["values"] != [])
-    if has_red & has_ir:
+    has_red = (data["value"]["fields"]["red_frame"]["arrayValue"]["values"] != [])
+    has_ir = (data["value"]["fields"]["ir_frame"]["arrayValue"]["values"] != [])
+    status = data["value"]["fields"]["status"]["stringValue"]
+    if has_red & has_ir & (status == 'new'):
         # New long form frame from BPM device
         red_frame = [float(x['doubleValue']) for x in data["value"]["fields"]["red_frame"]["arrayValue"]["values"]]
         ir_frame = [float(x['doubleValue']) for x in data["value"]["fields"]["ir_frame"]["arrayValue"]["values"]]
