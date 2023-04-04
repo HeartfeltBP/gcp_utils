@@ -14,7 +14,7 @@ def process_frame(red_frame, ir_frame, config):
     ir_filt_flip = _flip_signal(ir_filt)
     combined = (red_filt_flip + ir_filt_flip) / 2  # averaging strategy
 
-    combined_resamp = resample_signal(sig=combined, fs_old=cm.bpm_fs, fs_new=cm.bpm_fs)
+    combined_resamp = resample_signal(sig=combined.reshape(-1).tolist(), fs_old=cm.bpm_fs, fs_new=cm.bpm_fs)
     windows = _split_frame(sig=combined_resamp, n=int(len(combined_resamp) / cm.win_len))
     result = {
         'red_frame_for_processing': list(red_filt),
