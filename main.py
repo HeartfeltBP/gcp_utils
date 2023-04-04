@@ -8,7 +8,7 @@ from database_tools.preprocessing.functions import bandpass
 
 client = firestore.Client()
 
-def onNewFrame(data, context):
+def onUpdateFrame(data, context):
     """Filter and split new frames written to '{uid}/frames'.
 
     Preprocessing Steps
@@ -21,38 +21,41 @@ def onNewFrame(data, context):
     collection_path, document_path = get_document_context(context)
     affected_doc = client.collection(collection_path).document(document_path)
 
-    # New long form frame from BPM device
-    red_frame = [float(x['doubleValue']) for x in data["value"]["fields"]["red_frame"]["arrayValue"]['values']]
-    ir_frame = [float(x['doubleValue']) for x in data["value"]["fields"]["ir_frame"]["arrayValue"]['values']]
+    has_red = (data["value"]["fields"]["status"]["red_frame"]["arrayValue"]["values"] != [])
+    has_ir = (data["value"]["fields"]["status"]["ir_frame"]["arrayValue"]["values"] != [])
+    if has_red & has_ir:
+        # New long form frame from BPM device
+        red_frame = [float(x['doubleValue']) for x in data["value"]["fields"]["red_frame"]["arrayValue"]["values"]]
+        ir_frame = [float(x['doubleValue']) for x in data["value"]["fields"]["ir_frame"]["arrayValue"]["values"]]
 
-    # Frame ID (uid)
-    fid = str(data["value"]["fields"]["fid"]["stringValue"])
+        # Frame ID (uid)
+        fid = str(data["value"]["fields"]["fid"]["stringValue"])
 
-    # Target Firestore collection (bpm_data or bpm_data_test)
-    target = str(data["value"]["fields"]["target"]["stringValue"])
+        # Target Firestore collection (bpm_data or bpm_data_test)
+        target = str(data["value"]["fields"]["target"]["stringValue"])
 
-    # Processing steps
-    processed = process_frame(red_frame, ir_frame, config=CONFIG)
-    cardiac_metrics = predict_cardiac_metrics(
-        red=processed['red_frame_for_processing'],
-        ir=processed['ir_frame_for_processing'],
-        fs=CONFIG['bpm_fs'],
-    )
-    windows = [s for s in generate_window_document(processed['windows'], fid)]
+        # Processing steps
+        processed = process_frame(red_frame, ir_frame, config=CONFIG)
+        cardiac_metrics = predict_cardiac_metrics(
+            red=processed['red_frame_for_processing'],
+            ir=processed['ir_frame_for_processing'],
+            fs=CONFIG['bpm_fs'],
+        )
+        windows = [s for s in generate_window_document(processed['windows'], fid)]
 
-    col = client.collection(target).document(document_path.split('/')[0]).collection(u'windows')
-    for w in windows:
-        col.add(w)
+        col = client.collection(target).document(document_path.split('/')[0]).collection(u'windows')
+        for w in windows:
+            col.add(w)
 
-    affected_doc.update({
-        u'status': 'processed',
-        u'red_frame_for_presentation': processed['red_frame_for_presentation'],
-        u'ir_frame_for_presentation': processed['ir_frame_for_presentation'],
-        u'combined_for_presentation': processed['combined_frame_for_processing'],
-        u'pulse_rate': cardiac_metrics['pulse_rate'],
-        u'spo2': cardiac_metrics['spo2'],
-        u'r': cardiac_metrics['r'],
-    })
+        affected_doc.update({
+            u'status': 'processed',
+            u'red_frame_for_presentation': processed['red_frame_for_presentation'],
+            u'ir_frame_for_presentation': processed['ir_frame_for_presentation'],
+            u'combined_for_presentation': processed['combined_frame_for_processing'],
+            u'pulse_rate': cardiac_metrics['pulse_rate'],
+            u'spo2': cardiac_metrics['spo2'],
+            u'r': cardiac_metrics['r'],
+        })
 
 def onNewWindow(data, context):
     """Validate new windows."""
@@ -81,7 +84,7 @@ def onNewWindow(data, context):
         u'beat_sim': result['beat_sim'],
     })
 
-def onValidWindow(data, context):
+def onUpdateWindow(data, context):
     """Make BP prediction using model endpoint (vital-bee-206-serving)."""
     collection_path, document_path = get_document_context(context)
     affected_doc = client.collection(collection_path).document(document_path)

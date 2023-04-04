@@ -4,7 +4,7 @@ from gcp_utils import constants
 from gcp_utils.tools.utils import format_as_json
 from firebase_admin import firestore, initialize_app
 
-from main import onNewFrame, onNewWindow, onValidWindow
+from main import onUpdateFrame, onNewWindow, onUpdateWindow
 
 initialize_app()
 
@@ -23,7 +23,7 @@ def test_onNewFrame():
 
     # Convert to JSON and test cloud function
     data = format_as_json(constants.BPM_FRAME)[0]  # dict
-    onNewFrame(data, context)
+    onUpdateFrame(data, context)
 
     # Get expected result
     expected_processed_frame, expected_windows = constants.processed_frame_and_windows()
@@ -77,7 +77,7 @@ def test_onValidWindow():
     context.resource = f'/databases/documents/bpm_data_test/{UID}/windows/' + str(doc.id)
 
     # Test cloud function
-    onValidWindow(data, context)
+    onUpdateWindow(data, context)
 
     # Get expected result
     expected_predicted_window = format_as_json(constants.predicted_window())[0]  # dict
