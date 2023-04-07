@@ -32,7 +32,6 @@ RAW_VALID_WINDOW = {
     'ppg_scaled': [0],
     'vpg_scaled': [0],
     'apg_scaled': [0],
-    'abp_scaled': [0],
     'abp': [0],
     'f0': 0,
     'snr': 0,
@@ -79,7 +78,6 @@ def processed_valid_window():
         'f0': result['f0'],
         'snr': result['snr'],
         'beat_sim': result['beat_sim'],
-        'abp_scaled': [0],
         'abp': [0],
     }
     return processed_valid_window
@@ -92,7 +90,6 @@ def predicted_window():
     predicted_window = processed_window
     predicted_window.update({
         'status': 'predicted',
-        'abp_scaled': result['abp_scaled'],
         'abp': result['abp'],
     })
     return predicted_window

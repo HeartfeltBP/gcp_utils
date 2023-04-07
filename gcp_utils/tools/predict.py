@@ -23,16 +23,17 @@ def predict_cardiac_metrics(red: np.ndarray, ir: np.ndarray, cm: ConfigMapper) -
 
 def predict_bp(data, cm):
     instances = _get_inputs(data)
-    abp_scaled = _predict(
+    abp = _predict(
         project="123543907199",
         endpoint_id="4207052545266286592",
         location="us-central1",
         instances=instances,
     )
-    abp = _rescale_bp(cm.scaler_path, abp_scaled)
+    if cm.rescale_bp:
+        abp = _rescale_bp(cm.scaler_path, abp)
+
     result = {
         u'status': 'predicted',
-        u'abp_scaled': abp_scaled,
         u'abp': abp,
     }
     return result
