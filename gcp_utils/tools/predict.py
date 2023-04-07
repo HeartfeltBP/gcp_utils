@@ -1,17 +1,17 @@
 import numpy as np
 import pickle as pkl
-from typing import Dict, List, Union, Tuple
+from typing import Dict, List, Union
 from google.cloud import aiplatform
 from google.protobuf import json_format
 from google.protobuf.struct_pb2 import Value
-from database_tools.preprocessing.cardiac import estimate_pulse_rate, estimate_spo2
-from database_tools.preprocessing.functions import find_peaks
+from database_tools.processing.cardiac import estimate_pulse_rate, estimate_spo2
+from database_tools.processing.detect import detect_peaks
 
-def predict_cardiac_metrics(red, ir, fs):
-    red_idx = find_peaks(np.array(red))
-    ir_idx = find_peaks(np.array(ir))
+def predict_cardiac_metrics(red, ir, config):
+    red_idx = detect_peaks(np.array(red))
+    ir_idx = detect_peaks(np.array(ir))
 
-    pulse_rate = estimate_pulse_rate(red, ir, red_idx, ir_idx, fs=fs)
+    pulse_rate = estimate_pulse_rate(red, ir, red_idx, ir_idx, fs=config.bpm_fs)
     spo2, r = estimate_spo2(red, ir, red_idx, ir_idx)
     result = {
         'pulse_rate': int(pulse_rate),

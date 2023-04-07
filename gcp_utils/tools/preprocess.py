@@ -1,9 +1,9 @@
 import numpy as np
 import pickle as pkl
 from typing import Tuple
-from database_tools.preprocessing.datastores import ConfigMapper, Window
-from database_tools.preprocessing.functions import bandpass
-from database_tools.preprocessing.utils import resample_signal
+from database_tools.tools.dataset import ConfigMapper, Window
+from database_tools.processing.modify import bandpass
+from database_tools.processing.utils import resample_signal
 
 def process_frame(red_frame, ir_frame, config):
     cm = ConfigMapper(config)
@@ -17,11 +17,12 @@ def process_frame(red_frame, ir_frame, config):
 
     windows = _split_frame(sig=combined_resamp, n=int(combined_resamp.shape[0] / cm.win_len))
     result = {
-        'red_frame_for_processing': list(red_filt),
-        'ir_frame_for_processing': list(ir_filt),
+        'red_frame_for_processing': list(red_frame),
+        'ir_frame_for_processing': list(ir_frame),
         'red_frame_for_presentation': list(red_filt_flip),
         'ir_frame_for_presentation': list(ir_filt_flip),
         'combined_frame_for_presentation': list(combined),
+        'combined_frame_for_processing': list(combined_resamp),
         'windows': windows,
     }
     return result

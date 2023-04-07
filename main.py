@@ -3,9 +3,11 @@ from gcp_utils import constants
 from gcp_utils.tools.preprocess import validate_window, process_frame
 from gcp_utils.tools.predict import predict_bp, predict_cardiac_metrics
 from gcp_utils.tools.utils import get_document_context, generate_window_document
-from gcp_utils.constants import CONFIG
+from gcp_utils.constants import CONFIG_PATH
+from database_tools.tools.dataset import ConfigMapper
 
 client = firestore.Client()
+config = ConfigMapper(CONFIG_PATH)
 
 def onUpdateFrame(data, context):
     """Filter and split new frames written to '{uid}/frames'.
@@ -35,11 +37,11 @@ def onUpdateFrame(data, context):
         target = str(data["value"]["fields"]["target"]["stringValue"])
 
         # Processing steps
-        processed = process_frame(red_frame, ir_frame, config=CONFIG)
+        processed = process_frame(red_frame, ir_frame, config=config)
         cardiac_metrics = predict_cardiac_metrics(
             red=processed['red_frame_for_processing'],
             ir=processed['ir_frame_for_processing'],
-            fs=CONFIG['bpm_fs'],
+            config=config,
         )
         windows = [s for s in generate_window_document(processed['windows'], fid)]
 
@@ -49,8 +51,11 @@ def onUpdateFrame(data, context):
 
         affected_doc.update({
             u'status': 'processed',
+            u'red_frame_for_processing': processed['red_frame_for_processing'],
+            u'ir_frame_for_processing': processed['ir_frame_for_processing'],
             u'red_frame_for_presentation': processed['red_frame_for_presentation'],
             u'ir_frame_for_presentation': processed['ir_frame_for_presentation'],
+            u'combined_frame_for_processing': processed['combined_frame_for_processing'],
             u'combined_frame_for_presentation': processed['combined_frame_for_presentation'],
             u'pulse_rate': cardiac_metrics['pulse_rate'],
             u'spo2': cardiac_metrics['spo2'],
@@ -68,7 +73,7 @@ def onCreateWindow(data, context):
     # Perform validation on window and return results
     result = validate_window(
         ppg=ppg_raw,
-        config=constants.CONFIG,
+        config=config,
     )
 
     affected_doc.update({
@@ -92,7 +97,7 @@ def onUpdateWindow(data, context):
     # Make prediction only if window is valid
     status = str(data["value"]["fields"]["status"]["stringValue"])
     if status == 'valid':
-        result = predict_bp(data, constants.CONFIG)
+        result = predict_bp(data, config)
         affected_doc.update({
             u'status': result['status'],
             u'abp_scaled': result['abp_scaled'],
