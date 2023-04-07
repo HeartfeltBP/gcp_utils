@@ -99,6 +99,5 @@ def onUpdateWindow(data, context):
         result = predict_bp(data, cm)
         affected_doc.update({
             u'status': result['status'],
-            u'abp_scaled': result['abp_scaled'],
             u'abp': result['abp'],
         })
