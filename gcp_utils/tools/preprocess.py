@@ -6,15 +6,15 @@ from database_tools.processing.modify import bandpass
 from database_tools.processing.utils import resample_signal
 
 def process_frame(red_frame: list, ir_frame: list, cm: ConfigMapper) -> dict:
-    red_filt = bandpass(red_frame, low=cm.freq_band[0], high=cm.freq_band[1], fs=cm.bpm_fs)
-    ir_filt = bandpass(ir_frame, low=cm.freq_band[0], high=cm.freq_band[1], fs=cm.bpm_fs)
+    red_filt = bandpass(red_frame, low=cm.data.freq_band[0], high=cm.data.freq_band[1], fs=cm.deploy.bpm_fs)
+    ir_filt = bandpass(ir_frame, low=cm.data.freq_band[0], high=cm.data.freq_band[1], fs=cm.deploy.bpm_fs)
 
     red_filt_flip = _flip_signal(red_filt)
     ir_filt_flip = _flip_signal(ir_filt)
     combined = (red_filt_flip + ir_filt_flip) / 2  # averaging strategy
-    combined_resamp = resample_signal(sig=combined, fs_old=cm.bpm_fs, fs_new=cm.fs)
+    combined_resamp = resample_signal(sig=combined, fs_old=cm.deploy.bpm_fs, fs_new=cm.data.fs)
 
-    windows = _split_frame(sig=combined_resamp, n=int(combined_resamp.shape[0] / cm.win_len))
+    windows = _split_frame(sig=combined_resamp, n=int(combined_resamp.shape[0] / cm.data.win_len))
     result = {
         'red_frame_for_processing': list(red_frame),
         'ir_frame_for_processing': list(ir_frame),
@@ -47,14 +47,14 @@ def _split_frame(sig: np.ndarray, n: int) -> list:
 def validate_window(ppg: list, cm: ConfigMapper) -> dict:
     ppg = np.array(ppg, dtype=np.float32)
     ppg[np.isnan(ppg)] = 0
-    ppg = bandpass(ppg, low=cm.freq_band[0], high=cm.freq_band[1], fs=cm.fs)
+    ppg = bandpass(ppg, low=cm.data.freq_band[0], high=cm.data.freq_band[1], fs=cm.data.fs)
 
-    win = Window(ppg, cm, checks=cm.checks)
+    win = Window(ppg, cm, checks=cm.data.checks)
     win.get_peaks()
     status = 'valid' if win.valid else 'invalid'
     vpg, apg = _get_ppg_derivatives(ppg)
 
-    ppg_s, vpg_s, apg_s = _scale_data(cm.scaler_path, ppg, vpg, apg)
+    ppg_s, vpg_s, apg_s = _scale_data(cm.deploy.cloud_scaler_path, ppg, vpg, apg)
 
     result = {
         'status': str(status),

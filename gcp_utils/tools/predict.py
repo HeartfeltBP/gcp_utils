@@ -12,7 +12,7 @@ def predict_cardiac_metrics(red: np.ndarray, ir: np.ndarray, cm: ConfigMapper) -
     red_idx = detect_peaks(red)
     ir_idx = detect_peaks(ir)
 
-    pulse_rate = estimate_pulse_rate(red, ir, red_idx, ir_idx, fs=cm.bpm_fs)
+    pulse_rate = estimate_pulse_rate(red, ir, red_idx, ir_idx, fs=cm.deploy.bpm_fs)
     spo2, r = estimate_spo2(red, ir, red_idx, ir_idx)
     result = {
         'pulse_rate': int(pulse_rate),
@@ -21,7 +21,7 @@ def predict_cardiac_metrics(red: np.ndarray, ir: np.ndarray, cm: ConfigMapper) -
     }
     return result
 
-def predict_bp(data, cm):
+def predict_bp(data: dict, cm: ConfigMapper):
     instances = _get_inputs(data)
     abp = _predict(
         project="123543907199",
@@ -29,8 +29,8 @@ def predict_bp(data, cm):
         location="us-central1",
         instances=instances,
     )
-    if cm.rescale_bp:
-        abp = _rescale_bp(cm.scaler_path, abp)
+    if cm.deploy.rescale_bp:
+        abp = _rescale_bp(cm.deploy.cloud_scaler_path, abp)
 
     result = {
         u'status': 'predicted',
