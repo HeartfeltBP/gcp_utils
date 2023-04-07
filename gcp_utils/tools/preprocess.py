@@ -5,15 +5,14 @@ from database_tools.tools.dataset import ConfigMapper, Window
 from database_tools.processing.modify import bandpass
 from database_tools.processing.utils import resample_signal
 
-def process_frame(red_frame, ir_frame, config):
-    cm = ConfigMapper(config)
+def process_frame(red_frame: list, ir_frame: list, cm: ConfigMapper) -> dict:
     red_filt = bandpass(red_frame, low=cm.freq_band[0], high=cm.freq_band[1], fs=cm.bpm_fs)
     ir_filt = bandpass(ir_frame, low=cm.freq_band[0], high=cm.freq_band[1], fs=cm.bpm_fs)
 
     red_filt_flip = _flip_signal(red_filt)
     ir_filt_flip = _flip_signal(ir_filt)
     combined = (red_filt_flip + ir_filt_flip) / 2  # averaging strategy
-    combined_resamp = resample_signal(sig=combined.tolist(), fs_old=cm.bpm_fs, fs_new=cm.fs)
+    combined_resamp = resample_signal(sig=combined, fs_old=cm.bpm_fs, fs_new=cm.fs)
 
     windows = _split_frame(sig=combined_resamp, n=int(combined_resamp.shape[0] / cm.win_len))
     result = {
@@ -45,14 +44,13 @@ def _split_frame(sig: np.ndarray, n: int) -> list:
     n_sigs = [s.tolist() for s in np.split(sig, n)]
     return n_sigs
 
-def validate_window(ppg: list, config: dict) -> dict:
-    cm = ConfigMapper(config)
-
+def validate_window(ppg: list, cm: ConfigMapper) -> dict:
     ppg = np.array(ppg, dtype=np.float32)
     ppg[np.isnan(ppg)] = 0
     ppg = bandpass(ppg, low=cm.freq_band[0], high=cm.freq_band[1], fs=cm.fs)
 
     win = Window(ppg, cm, checks=cm.checks)
+    win.get_peaks()
     status = 'valid' if win.valid else 'invalid'
     vpg, apg = _get_ppg_derivatives(ppg)
 

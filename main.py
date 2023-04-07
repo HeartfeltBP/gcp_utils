@@ -1,5 +1,4 @@
 from google.cloud import firestore
-from gcp_utils import constants
 from gcp_utils.tools.preprocess import validate_window, process_frame
 from gcp_utils.tools.predict import predict_bp, predict_cardiac_metrics
 from gcp_utils.tools.utils import get_document_context, generate_window_document
@@ -7,7 +6,7 @@ from gcp_utils.constants import CONFIG_PATH
 from database_tools.tools.dataset import ConfigMapper
 
 client = firestore.Client()
-config = ConfigMapper(CONFIG_PATH)
+cm = ConfigMapper(CONFIG_PATH)
 
 def onUpdateFrame(data, context):
     """Filter and split new frames written to '{uid}/frames'.
@@ -37,11 +36,11 @@ def onUpdateFrame(data, context):
         target = str(data["value"]["fields"]["target"]["stringValue"])
 
         # Processing steps
-        processed = process_frame(red_frame, ir_frame, config=config)
+        processed = process_frame(red_frame, ir_frame, cm=cm)
         cardiac_metrics = predict_cardiac_metrics(
             red=processed['red_frame_for_processing'],
             ir=processed['ir_frame_for_processing'],
-            config=config,
+            cm=cm,
         )
         windows = [s for s in generate_window_document(processed['windows'], fid)]
 
@@ -73,7 +72,7 @@ def onCreateWindow(data, context):
     # Perform validation on window and return results
     result = validate_window(
         ppg=ppg_raw,
-        config=config,
+        cm=cm,
     )
 
     affected_doc.update({
@@ -97,7 +96,7 @@ def onUpdateWindow(data, context):
     # Make prediction only if window is valid
     status = str(data["value"]["fields"]["status"]["stringValue"])
     if status == 'valid':
-        result = predict_bp(data, config)
+        result = predict_bp(data, cm)
         affected_doc.update({
             u'status': result['status'],
             u'abp_scaled': result['abp_scaled'],

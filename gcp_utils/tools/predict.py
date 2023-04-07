@@ -6,12 +6,13 @@ from google.protobuf import json_format
 from google.protobuf.struct_pb2 import Value
 from database_tools.processing.cardiac import estimate_pulse_rate, estimate_spo2
 from database_tools.processing.detect import detect_peaks
+from database_tools.tools.dataset import ConfigMapper
 
-def predict_cardiac_metrics(red, ir, config):
-    red_idx = detect_peaks(np.array(red))
-    ir_idx = detect_peaks(np.array(ir))
+def predict_cardiac_metrics(red: np.ndarray, ir: np.ndarray, cm: ConfigMapper) -> dict:
+    red_idx = detect_peaks(red)
+    ir_idx = detect_peaks(ir)
 
-    pulse_rate = estimate_pulse_rate(red, ir, red_idx, ir_idx, fs=config.bpm_fs)
+    pulse_rate = estimate_pulse_rate(red, ir, red_idx, ir_idx, fs=cm.bpm_fs)
     spo2, r = estimate_spo2(red, ir, red_idx, ir_idx)
     result = {
         'pulse_rate': int(pulse_rate),
@@ -20,7 +21,7 @@ def predict_cardiac_metrics(red, ir, config):
     }
     return result
 
-def predict_bp(data, config):
+def predict_bp(data, cm):
     instances = _get_inputs(data)
     abp_scaled = _predict(
         project="123543907199",
@@ -28,7 +29,7 @@ def predict_bp(data, config):
         location="us-central1",
         instances=instances,
     )
-    abp = _rescale_bp(config['scaler_path'], abp_scaled)
+    abp = _rescale_bp(cm.scaler_path, abp_scaled)
     result = {
         u'status': 'predicted',
         u'abp_scaled': abp_scaled,

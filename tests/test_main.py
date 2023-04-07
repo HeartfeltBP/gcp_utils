@@ -11,7 +11,7 @@ initialize_app()
 # camhpjohnson@gmail.com
 UID = 'wx1jF08b3DTPijtQcwGiEwpEFai2'
 
-def test_onNewFrame():
+def test_onUpdateFrame():
     context = mock.Mock()
     database = firestore.client()
     col = database.collection(u'bpm_data_test').document(UID).collection(u'frames')
@@ -41,7 +41,7 @@ def test_onNewFrame():
     case = unittest.TestCase()
     case.assertCountEqual(dict(x=cloud_processed_frame, y=cloud_windows), dict(x=expected_processed_frame, y=expected_windows))
 
-def test_onNewWindow():
+def test_onCreateWindow():
     context = mock.Mock()
     database = firestore.client()
     col = database.collection(u'bpm_data_test').document(UID).collection(u'windows')
@@ -63,7 +63,7 @@ def test_onNewWindow():
     cloud_processed_window = format_as_json(doc)[0]  # single doc
     assert cloud_processed_window == expected_processed_window
 
-def test_onValidWindow():
+def test_onUpdateWindow():
     context = mock.Mock()
     database = firestore.client()
     col = database.collection(u'bpm_data_test').document(UID).collection(u'windows')

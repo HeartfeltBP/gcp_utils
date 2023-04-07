@@ -42,12 +42,12 @@ RAW_VALID_WINDOW = {
 
 def processed_frame_and_windows():
     # Processing steps
-    config = ConfigMapper(CONFIG_PATH)
-    processed = process_frame(BPM_FRAME['red_frame'], BPM_FRAME['ir_frame'])
+    cm = ConfigMapper(CONFIG_PATH)
+    processed = process_frame(BPM_FRAME['red_frame'], BPM_FRAME['ir_frame'], cm=cm)
     cardiac_metrics = predict_cardiac_metrics(
         red=processed['red_frame_for_processing'],
         ir=processed['ir_frame_for_processing'],
-        config=config,
+        cm=cm,
     )
     windows = [s for s in generate_window_document(processed['windows'], BPM_FRAME['fid'])]
     processed_frame = BPM_FRAME
@@ -63,8 +63,8 @@ def processed_frame_and_windows():
     return processed_frame, windows
 
 def processed_valid_window():
-    config = ConfigMapper(CONFIG_PATH)
-    result = validate_window(RAW_VALID_WINDOW['ppg_raw'], config)
+    cm = ConfigMapper(CONFIG_PATH)
+    result = validate_window(RAW_VALID_WINDOW['ppg_raw'], cm)
     processed_valid_window = {
         'sid': '123456789',
         'fid': '123456789',
@@ -85,10 +85,10 @@ def processed_valid_window():
     return processed_valid_window
 
 def predicted_window():
-    config = ConfigMapper(CONFIG_PATH)
+    cm = ConfigMapper(CONFIG_PATH)
     processed_window = processed_valid_window()
     data = format_as_json(processed_window)[0]
-    result = predict_bp(data, config)
+    result = predict_bp(data, cm)
     predicted_window = processed_window
     predicted_window.update({
         'status': 'predicted',
