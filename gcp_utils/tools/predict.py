@@ -31,7 +31,7 @@ def predict_bp(data: dict, cm: ConfigMapper):
             instances=instances,
         )
     except Exception as e:
-        abp = np.zeros((256))
+        abp = np.zeros((256)).tolist()
     if cm.deploy.rescale_bp:
         abp = _rescale_bp(cm.deploy.cloud_scaler_path, abp)
 
