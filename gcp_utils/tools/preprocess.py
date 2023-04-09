@@ -82,6 +82,8 @@ def validate_window(ppg: list, cm: ConfigMapper) -> dict:
         'f0': float(win.f0),
         'snr': float(win.snr),
         'beat_sim': float(win.beat_sim),
+        'notches': bool(win._notch_check),
+        'flat_lines': bool(win._flat_check),
     }
     return result
 

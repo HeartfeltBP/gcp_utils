@@ -85,6 +85,8 @@ def onCreateWindow(data, context):
         u'f0': result['f0'],
         u'snr': result['snr'],
         u'beat_sim': result['beat_sim'],
+        u'notches': result['notches'],
+        u'flat_lines': result['flat_lines'],
     })
 
 def onUpdateWindow(data, context):
