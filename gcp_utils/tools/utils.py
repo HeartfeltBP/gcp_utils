@@ -61,6 +61,8 @@ def generate_window_document(windows: list, fid: str) -> dict:
             'f0': 0,
             'snr': 0,
             'beat_sim': 0,
+            'notches': False,
+            'flat_lines': True,
         }
         yield doc
 

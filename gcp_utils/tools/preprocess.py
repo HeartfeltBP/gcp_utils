@@ -72,6 +72,7 @@ def validate_window(ppg: list, cm: ConfigMapper) -> dict:
     # scale data with mimic3 training minmax scaler
     ppg_s, vpg_s, apg_s = _scale_data(cm.deploy.cloud_scaler_path, ppg, vpg, apg)
 
+    flat_lines = not win._flat_check
     result = {
         'status': str(status),
         'vpg': vpg.tolist(),
@@ -83,7 +84,7 @@ def validate_window(ppg: list, cm: ConfigMapper) -> dict:
         'snr': float(win.snr),
         'beat_sim': float(win.beat_sim),
         'notches': bool(win._notch_check),
-        'flat_lines': bool(win._flat_check),
+        'flat_lines': bool(flat_lines),
     }
     return result
 
