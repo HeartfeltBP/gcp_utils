@@ -113,6 +113,8 @@ def processed_valid_window():
         'f0': result['f0'],
         'snr': result['snr'],
         'beat_sim': result['beat_sim'],
+        'notches': result['notches'],
+        'flat_lines': result['flat_lines'],
     })
     return processed_valid_window
 
