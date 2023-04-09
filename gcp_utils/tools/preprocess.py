@@ -67,7 +67,7 @@ def validate_window(ppg: list, cm: ConfigMapper) -> dict:
     if status == 'valid':
         vpg, apg = _get_ppg_derivatives(ppg)
     else:
-        vpg, apg = [], []
+        vpg, apg = np.array([]), np.array([])
 
     # scale data with mimic3 training minmax scaler
     ppg_s, vpg_s, apg_s = _scale_data(cm.deploy.cloud_scaler_path, ppg, vpg, apg)
@@ -92,7 +92,7 @@ def _get_ppg_derivatives(ppg: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
 def _scale_data(path: str, ppg: np.ndarray, vpg: np.ndarray, apg: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     with open(path, 'rb') as f:
-        scalers = pkl.load(f)
+        scalers, _ = pkl.load(f)
     ppg_scaler = scalers['ppg']
     vpg_scaler = scalers['vpg']
     apg_scaler = scalers['apg']

@@ -92,7 +92,7 @@ def _predict(
 
 def _rescale_bp(path: str, abp: np.ndarray) -> np.ndarray:
     with open(path, 'rb') as f:
-        scalers = pkl.load(f)
+        scalers, _ = pkl.load(f)
     abp_scaler = scalers['abp']
     abp_s = np.multiply(abp, abp_scaler[1] - abp_scaler[0]) + abp_scaler[0]
     return abp_s.tolist()
