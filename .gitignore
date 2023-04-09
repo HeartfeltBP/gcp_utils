@@ -7,3 +7,7 @@ dist
 .pytest_cache
 __pycache__
 logs/
+
+*/*.log
+*/*/*.log
+notebooks/database_tools.io.wfdb.log
