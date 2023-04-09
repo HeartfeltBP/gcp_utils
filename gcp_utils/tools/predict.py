@@ -23,12 +23,15 @@ def predict_cardiac_metrics(red: np.ndarray, ir: np.ndarray, cm: ConfigMapper) -
 
 def predict_bp(data: dict, cm: ConfigMapper):
     instances = _get_inputs(data)
-    abp = _predict(
-        project="123543907199",
-        endpoint_id="4207052545266286592",
-        location="us-central1",
-        instances=instances,
-    )
+    try:
+        abp = _predict(
+            project="123543907199",
+            endpoint_id="4207052545266286592",
+            location="us-central1",
+            instances=instances,
+        )
+    except Exception as e:
+        abp = np.zeros((256))
     if cm.deploy.rescale_bp:
         abp = _rescale_bp(cm.deploy.cloud_scaler_path, abp)
 

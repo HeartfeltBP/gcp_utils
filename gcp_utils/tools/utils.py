@@ -47,17 +47,16 @@ def format_as_json(doc) -> dict:
 def generate_window_document(windows: list, fid: str) -> dict:
     for w in windows:
         doc = {
-            'sid': str(hash_obj(w)),
+            'wid': str(hash_obj(w)),
             'fid': str(fid),
             'status': 'new',
-            'ppg_raw': list(w),
-            'ppg': [0],
+            'ppg': list(w),
             'vpg': [0],
             'apg': [0],
             'ppg_scaled': [0],
             'vpg_scaled': [0],
             'apg_scaled': [0],
-            'abp_scaled': [0],
+            'abp': [0],
             'abp': [0],
             'f0': 0,
             'snr': 0,

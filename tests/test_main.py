@@ -17,12 +17,12 @@ def test_onUpdateFrame():
     col = database.collection(u'bpm_data_test').document(UID).collection(u'frames')
 
     # Add frame
-    col.add(constants.BPM_FRAME)
-    doc = [x for x in col.where(u'fid', u'==', u'987654321').stream()][0]
+    col.add(constants.NEW_BPM_FRAME)
+    doc = [x for x in col.where(u'fid', u'==', u'0').stream()][0]
     context.resource = f'databases/documents/bpm_data_test/{UID}/frames/' + str(doc.id)
 
     # Convert to JSON and test cloud function
-    data = format_as_json(constants.BPM_FRAME)[0]  # dict
+    data = format_as_json(constants.NEW_BPM_FRAME)[0]  # dict
     onUpdateFrame(data, context)
 
     # Get expected result
@@ -31,12 +31,12 @@ def test_onUpdateFrame():
     expected_windows = format_as_json(expected_windows)
 
     col = database.collection(u'bpm_data_test').document(UID).collection(u'frames')
-    doc = col.where(u'fid', u'==', u'987654321').stream()
+    doc = col.where(u'fid', u'==', u'0').stream()
     cloud_processed_frame = format_as_json(doc)[0]
 
     # Get processed data from firebase and compare
     col = database.collection(u'bpm_data_test').document(UID).collection(u'windows')
-    doc_gen = col.where(u'fid', u'==', u'987654321').stream()
+    doc_gen = col.where(u'fid', u'==', u'0').stream()
     cloud_windows = format_as_json(doc_gen)  # multiple docs
     case = unittest.TestCase()
     case.assertCountEqual(dict(x=cloud_processed_frame, y=cloud_windows), dict(x=expected_processed_frame, y=expected_windows))
@@ -47,19 +47,19 @@ def test_onCreateWindow():
     col = database.collection(u'bpm_data_test').document(UID).collection(u'windows')
 
     # Add raw valid sample to collection (and get document id)
-    col.add(constants.RAW_VALID_WINDOW)
-    doc = [x for x in col.where(u'sid', u'==', u'123456789').stream()][0]
+    col.add(constants.NEW_VALID_WINDOW)
+    doc = [x for x in col.where(u'wid', u'==', u'0').stream()][0]
     context.resource = f'/databases/documents/bpm_data_test/{UID}/windows/' + str(doc.id)
 
     # Convert to JSON dictionary and test cloud function
-    data = format_as_json(constants.RAW_VALID_WINDOW)[0]  # dict
+    data = format_as_json(constants.NEW_VALID_WINDOW)[0]  # dict
     onCreateWindow(data, context)
 
     # Get expected result
     expected_processed_window = format_as_json(constants.processed_valid_window())[0]
 
     # Get processed data from firebase and compare
-    doc = col.where(u'sid', u'==', u'123456789').stream()
+    doc = col.where(u'wid', u'==', u'0').stream()
     cloud_processed_window = format_as_json(doc)[0]  # single doc
     assert cloud_processed_window == expected_processed_window
 
@@ -69,11 +69,11 @@ def test_onUpdateWindow():
     col = database.collection(u'bpm_data_test').document(UID).collection(u'windows')
 
     # Get test sample data
-    doc = col.where(u'sid', u'==', u'123456789').stream()
+    doc = col.where(u'wid', u'==', u'0').stream()
     data = format_as_json(doc)[0]  # single doc
 
     # Get context
-    doc = [x for x in col.where(u'sid', u'==', u'123456789').stream()][0]
+    doc = [x for x in col.where(u'wid', u'==', u'0').stream()][0]
     context.resource = f'/databases/documents/bpm_data_test/{UID}/windows/' + str(doc.id)
 
     # Test cloud function
@@ -83,6 +83,6 @@ def test_onUpdateWindow():
     expected_predicted_window = format_as_json(constants.predicted_window())[0]  # dict
 
     # Get prediction from firebase and compare
-    doc = col.where(u'sid', u'==', u'123456789').stream()
+    doc = col.where(u'wid', u'==', u'0').stream()
     cloud_predicted_window = format_as_json(doc)[0]  # single doc
     assert cloud_predicted_window == expected_predicted_window

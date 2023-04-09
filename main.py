@@ -50,8 +50,8 @@ def onUpdateFrame(data, context):
 
         affected_doc.update({
             u'status': 'processed',
-            u'red_frame_for_processing': processed['red_frame_for_processing'],
-            u'ir_frame_for_processing': processed['ir_frame_for_processing'],
+            u'red_frame': processed['red_frame_for_processing'],
+            u'ir_frame': processed['ir_frame_for_processing'],
             u'red_frame_for_presentation': processed['red_frame_for_presentation'],
             u'ir_frame_for_presentation': processed['ir_frame_for_presentation'],
             u'combined_frame_for_processing': processed['combined_frame_for_processing'],
@@ -67,17 +67,16 @@ def onCreateWindow(data, context):
     affected_doc = client.collection(collection_path).document(document_path)
 
     # Raw ppg window
-    ppg_raw = [float(x['doubleValue']) for x in data["value"]["fields"]["ppg_raw"]["arrayValue"]['values']]
+    ppg = [float(x['doubleValue']) for x in data["value"]["fields"]["ppg"]["arrayValue"]['values']]
 
     # Perform validation on window and return results
     result = validate_window(
-        ppg=ppg_raw,
+        ppg=ppg,
         cm=cm,
     )
 
     affected_doc.update({
         u'status': result['status'],
-        u'ppg': result['ppg'],
         u'vpg': result['vpg'],
         u'apg': result['apg'],
         u'ppg_scaled': result['ppg_scaled'],
