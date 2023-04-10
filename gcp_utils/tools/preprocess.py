@@ -54,7 +54,7 @@ def _split_frame(sig: np.ndarray, n: int) -> list:
     n_sigs = [s.tolist() for s in np.split(sig, n)]
     return n_sigs
 
-def validate_window(ppg: list, cm: ConfigMapper) -> dict:
+def validate_window(ppg: list, cm: ConfigMapper, force_valid: bool = False) -> dict:
     # convert to numpy array
     ppg = np.array(ppg, dtype=np.float32)
 
@@ -62,6 +62,10 @@ def validate_window(ppg: list, cm: ConfigMapper) -> dict:
     win = Window(ppg, cm, checks=cm.data.checks)
     win.get_peaks()
     status = 'valid' if win.valid else 'invalid'
+
+    # debug mode
+    if force_valid:
+        status = 'valid'
 
     # get model inputs if valid
     if status == 'valid':
