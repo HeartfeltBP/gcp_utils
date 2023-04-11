@@ -20,12 +20,12 @@ def get_json_field(data, field, dtype):
     elif dtype == 'float':
         value = float(field['floatValue'])
     elif dtype == 'list':
-        if list(field['arrayValue']['values'][0].keys())[0] == 'doubleValue':
-            key = 'doubleValue'
-        elif list(field['arrayValue']['values'][0].keys())[0] == 'intValue':
+        if list(field['arrayValue']['values'][0].keys())[0] == 'intValue':
             key = 'intValue'
         elif list(field['arrayValue']['values'][0].keys())[0] == 'floatValue':
             key = 'floatValue'
+        elif list(field['arrayValue']['values'][0].keys())[0] == 'doubleValue':
+            key = 'doubleValue'
         else:
             key = list(field['arrayValue']['values'][0].keys())[0]
             raise ValueError(f'Array of \'{key}\' not supported')
