@@ -20,8 +20,8 @@ def get_json_field(data, field, dtype):
     elif dtype == 'float':
         value = float(field['floatValue'])
     elif dtype == 'list':
-        if list(field['arrayValue']['values'][0].keys())[0] == 'intValue':
-            key = 'intValue'
+        if list(field['arrayValue']['values'][0].keys())[0] == 'integerValue':
+            key = 'integerValue'
         elif list(field['arrayValue']['values'][0].keys())[0] == 'floatValue':
             key = 'floatValue'
         elif list(field['arrayValue']['values'][0].keys())[0] == 'doubleValue':
