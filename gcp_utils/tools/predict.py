@@ -8,9 +8,9 @@ from database_tools.processing.cardiac import estimate_pulse_rate, estimate_spo2
 from database_tools.processing.detect import detect_peaks
 from database_tools.tools.dataset import ConfigMapper
 
-def predict_cardiac_metrics(red: np.ndarray, ir: np.ndarray, cm: ConfigMapper) -> dict:
-    red_idx = detect_peaks(red)
-    ir_idx = detect_peaks(ir)
+def predict_cardiac_metrics(red: list, ir: list, cm: ConfigMapper) -> dict:
+    red_idx = detect_peaks(np.array(red))
+    ir_idx = detect_peaks(np.array(ir))
 
     pulse_rate = estimate_pulse_rate(red, ir, red_idx, ir_idx, fs=cm.deploy.bpm_fs)
     spo2, r = estimate_spo2(red, ir, red_idx, ir_idx)
@@ -31,14 +31,13 @@ def predict_bp(data: dict, cm: ConfigMapper):
             instances=instances,
         )
     except Exception as e:
-        abp = np.zeros((256)).tolist()
+        abp = [np.zeros((256)).tolist() for i in range(len(instances))]
+
+    # TODO: Remove this
     if cm.deploy.rescale_bp:
         abp = _rescale_bp(cm.deploy.cloud_scaler_path, abp)
 
-    result = {
-        u'status': 'predicted',
-        u'abp': abp,
-    }
+    result = [i.tolist() for i in abp]
     return result
 
 def _get_inputs(data) -> dict:
@@ -50,14 +49,16 @@ def _get_inputs(data) -> dict:
     Returns:
         dict: Instance for inference.
     """
-    ppg = np.array([float(x['doubleValue']) for x in data["value"]["fields"]["ppg_scaled"]["arrayValue"]['values']], dtype=np.float32)
-    vpg = np.array([float(x['doubleValue']) for x in data["value"]["fields"]["vpg_scaled"]["arrayValue"]['values']], dtype=np.float32)
-    apg = np.array([float(x['doubleValue']) for x in data["value"]["fields"]["apg_scaled"]["arrayValue"]['values']], dtype=np.float32)
-    instances = [{
-        'ppg': ppg.reshape(256, 1).tolist(),
-        'vpg': vpg.reshape(256, 1).tolist(),
-        'apg': apg.reshape(256, 1).tolist(),
-    }]
+    instances = []
+    for d in data:
+        ppg = np.array([float(x['doubleValue']) for x in d["value"]["fields"]["ppg_scaled"]["arrayValue"]['values']], dtype=np.float32)
+        vpg = np.array([float(x['doubleValue']) for x in d["value"]["fields"]["vpg_scaled"]["arrayValue"]['values']], dtype=np.float32)
+        apg = np.array([float(x['doubleValue']) for x in d["value"]["fields"]["apg_scaled"]["arrayValue"]['values']], dtype=np.float32)
+        instances.append({
+            'ppg': ppg.reshape(256, 1).tolist(),
+            'vpg': vpg.reshape(256, 1).tolist(),
+            'apg': apg.reshape(256, 1).tolist(),
+        })
     return instances
 
 def _predict(
@@ -87,8 +88,8 @@ def _predict(
     )
 
     # The predictions are a google.protobuf.Value representation of the model's predictions.
-    pred = np.array(response.predictions[0]).flatten()
-    return pred.tolist()
+    pred = np.array(response.predictions).reshape(-1, 256)
+    return pred
 
 def _rescale_bp(path: str, abp: np.ndarray) -> np.ndarray:
     with open(path, 'rb') as f:

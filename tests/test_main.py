@@ -1,88 +1,73 @@
-import mock
 import unittest
 from gcp_utils import constants
-from gcp_utils.tools.utils import format_as_json
+from gcp_utils.tools.utils import format_as_json, query_collection, mock_context
 from firebase_admin import firestore, initialize_app
 
 from main import onUpdateFrame, onCreateWindow, onUpdateWindow
 
 initialize_app()
 
-# camhpjohnson@gmail.com
-UID = 'wx1jF08b3DTPijtQcwGiEwpEFai2'
+UID = 'v2iHQmPIVfVW0IuhfZ1yCIegsB52'
 
 def test_onUpdateFrame():
-    context = mock.Mock()
     database = firestore.client()
-    col = database.collection(u'bpm_data_test').document(UID).collection(u'frames')
+    frames_ref = database.collection(u'bpm_data_test').document(UID).collection(u'frames')
 
-    # Add frame
-    col.add(constants.NEW_BPM_FRAME)
-    doc = [x for x in col.where(u'fid', u'==', u'0').stream()][0]
-    context.resource = f'databases/documents/bpm_data_test/{UID}/frames/' + str(doc.id)
-
-    # Convert to JSON and test cloud function
-    data = format_as_json(constants.NEW_BPM_FRAME)[0]  # dict
+    # Add frame and trigger function
+    frames_ref.add(constants.NEW_BPM_FRAME)
+    doc = query_collection(frames_ref, 'fid', '==', '0')[0]
+    data = format_as_json(constants.NEW_BPM_FRAME)[0]
+    context = mock_context(doc.reference.path)
     onUpdateFrame(data, context)
 
     # Get expected result
-    expected_processed_frame, expected_windows = constants.processed_frame_and_windows()
-    expected_processed_frame = format_as_json(expected_processed_frame)[0]
-    expected_windows = format_as_json(expected_windows)
+    expected_frame, expected_windows = constants.processed_frame_and_windows()
+    expected_frame, expected_windows = format_as_json(expected_frame)[0], format_as_json(expected_windows)
 
-    col = database.collection(u'bpm_data_test').document(UID).collection(u'frames')
-    doc = col.where(u'fid', u'==', u'0').stream()
-    cloud_processed_frame = format_as_json(doc)[0]
+    # Get actual result
+    doc = query_collection(frames_ref, 'fid', '==', '0')[0]
+    actual_frame = format_as_json(doc.to_dict())[0]
 
-    # Get processed data from firebase and compare
-    col = database.collection(u'bpm_data_test').document(UID).collection(u'windows')
-    doc_gen = col.where(u'fid', u'==', u'0').stream()
-    cloud_windows = format_as_json(doc_gen)  # multiple docs
+    windows_ref = database.collection(u'bpm_data_test').document(UID).collection(u'windows')
+    docs = query_collection(windows_ref, 'fid', '==', '0')
+    actual_windows = format_as_json([d.to_dict() for d in docs])
+
     case = unittest.TestCase()
-    case.assertCountEqual(dict(x=cloud_processed_frame, y=cloud_windows), dict(x=expected_processed_frame, y=expected_windows))
+    case.assertCountEqual(dict(x=actual_frame, y=actual_windows), dict(x=expected_frame, y=expected_windows))
 
 def test_onCreateWindow():
-    context = mock.Mock()
     database = firestore.client()
-    col = database.collection(u'bpm_data_test').document(UID).collection(u'windows')
+    windows_ref = database.collection(u'bpm_data_test').document(UID).collection(u'windows')
 
-    # Add raw valid sample to collection (and get document id)
-    col.add(constants.NEW_VALID_WINDOW)
-    doc = [x for x in col.where(u'wid', u'==', u'0').stream()][0]
-    context.resource = f'/databases/documents/bpm_data_test/{UID}/windows/' + str(doc.id)
-
-    # Convert to JSON dictionary and test cloud function
-    data = format_as_json(constants.NEW_VALID_WINDOW)[0]  # dict
-    onCreateWindow(data, context)
+    # Add raw valid sample to collection (and get context
+    docs = query_collection(windows_ref, 'fid', '==', '0')
+    for d in docs:
+        data = format_as_json(d.to_dict())[0]
+        context = mock_context(d.reference.path)
+        onCreateWindow(data, context)
 
     # Get expected result
-    expected_processed_window = format_as_json(constants.processed_valid_window())[0]
+    expected_windows = format_as_json(constants.processed_windows())
 
     # Get processed data from firebase and compare
-    doc = col.where(u'wid', u'==', u'0').stream()
-    cloud_processed_window = format_as_json(doc)[0]  # single doc
-    assert cloud_processed_window == expected_processed_window
+    docs = query_collection(windows_ref, 'fid', '==', '0')
+    actual_windows = format_as_json([d.to_dict() for d in docs])
+    assert actual_windows == expected_windows
 
 def test_onUpdateWindow():
-    context = mock.Mock()
     database = firestore.client()
-    col = database.collection(u'bpm_data_test').document(UID).collection(u'windows')
+    windows_ref = database.collection(u'bpm_data_test').document(UID).collection(u'windows')
 
-    # Get test sample data
-    doc = col.where(u'wid', u'==', u'0').stream()
-    data = format_as_json(doc)[0]  # single doc
-
-    # Get context
-    doc = [x for x in col.where(u'wid', u'==', u'0').stream()][0]
-    context.resource = f'/databases/documents/bpm_data_test/{UID}/windows/' + str(doc.id)
-
-    # Test cloud function
+    # Trigger cloud function with last window
+    doc = query_collection(windows_ref, 'fid', '==', '0')[0]
+    data = format_as_json(doc.to_dict())[0]
+    context = mock_context(doc.reference.path)
     onUpdateWindow(data, context)
 
-    # Get expected result
-    expected_predicted_window = format_as_json(constants.predicted_window())[0]  # dict
+    # Get expected results
+    expected_windows = format_as_json(constants.predicted_windows())
 
     # Get prediction from firebase and compare
-    doc = col.where(u'wid', u'==', u'0').stream()
-    cloud_predicted_window = format_as_json(doc)[0]  # single doc
-    assert cloud_predicted_window == expected_predicted_window
+    docs = query_collection(windows_ref, 'wid', '==', '0')
+    actual_windows = format_as_json([d.to_dict() for d in docs])
+    assert actual_windows == expected_windows

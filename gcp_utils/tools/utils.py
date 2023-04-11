@@ -1,19 +1,43 @@
+import mock
 import json
 import hashlib
-
-def hash_obj(obj):
-    uid = hashlib.sha256(
-        json.dumps(sorted({str(obj): obj})).encode("utf-8")
-    ).hexdigest()
-    return uid
+from google.cloud.firestore import CollectionReference, DocumentReference
 
 def get_document_context(context):
     path_parts = context.resource.split('/documents/')[1].split('/')
-    collection_path = path_parts[0]
-    document_path = '/'.join(path_parts[1:])
-    return (collection_path, document_path)
+    collection_path = '/'.join(path_parts[0:-1])
+    document_name = path_parts[-1]
+    return (collection_path, document_name)
 
-def default_to_json(x):
+def get_json_field(data, field, dtype):
+    field = data['value']['fields'][field]
+    if dtype == 'int':
+        value = int(field['integerValue'])
+    elif dtype == 'bool':
+        value = bool(field['booleanValue'])
+    elif dtype == 'str':
+        value = str(field['stringValue'])
+    elif dtype == 'float':
+        value = float(field['floatValue'])
+    elif dtype == 'list':
+        value = [float(x['doubleValue']) for x in field['arrayValue']['values']]
+    else:
+        raise ValueError(f'Type \'{dtype}\' is not a supported type')
+    return value
+
+def format_as_json(doc) -> dict:
+    if isinstance(doc, list):
+        n_docs = doc
+    elif isinstance(doc, dict):
+        n_docs = [doc]
+    else:
+        n_docs = [x.to_dict() for x in doc]
+    data = [{'value': {'fields':
+        {key: _default_to_json(value) for key, value in doc.items()}
+    }} for doc in n_docs]
+    return data
+
+def _default_to_json(x):
     if isinstance(x, int):
         data = {'integerValue': x}
         return data
@@ -32,22 +56,20 @@ def default_to_json(x):
     else:
         raise TypeError(f'Type \'{type(x)}\' is not a supported type')
 
-def format_as_json(doc) -> dict:
-    if isinstance(doc, list):
-        n_docs = doc
-    elif not isinstance(doc, dict):
-        n_docs = [x.to_dict() for x in doc]
-    else:
-        n_docs = [doc]
-    data = [{'value': {'fields':
-        {key: default_to_json(value) for key, value in doc.items()}
-    }} for doc in n_docs]
-    return data
+def query_collection(col: CollectionReference, field, condition, value) -> DocumentReference:
+    doc_gen = col.where(field, condition, value).stream()
+    docs = [d for d in doc_gen]
+    return docs
+
+def mock_context(ref):
+    context = mock.Mock()
+    context.resource = 'databases/documents/' + ref
+    return context
 
 def generate_window_document(windows: list, fid: str) -> dict:
     for w in windows:
         doc = {
-            'wid': str(hash_obj(w)),
+            'wid': str(_hash_obj(w)),
             'fid': str(fid),
             'status': 'new',
             'ppg': list(w),
@@ -66,14 +88,8 @@ def generate_window_document(windows: list, fid: str) -> dict:
         }
         yield doc
 
-def delete_collection(coll_ref, batch_size):
-    docs = coll_ref.list_documents(page_size=batch_size)
-    deleted = 0
-
-    for doc in docs:
-        print(f'Deleting doc {doc.id} => {doc.get().to_dict()}')
-        doc.delete()
-        deleted = deleted + 1
-
-    if deleted >= batch_size:
-        return delete_collection(coll_ref, batch_size)
+def _hash_obj(obj):
+    uid = hashlib.sha256(
+        json.dumps(sorted({str(obj): obj})).encode("utf-8")
+    ).hexdigest()
+    return uid

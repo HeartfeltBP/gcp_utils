@@ -1,79 +1,59 @@
 from google.cloud import firestore
 from gcp_utils.tools.preprocess import validate_window, process_frame
 from gcp_utils.tools.predict import predict_bp, predict_cardiac_metrics
-from gcp_utils.tools.utils import get_document_context, generate_window_document
-from gcp_utils.constants import CONFIG_PATH
+from gcp_utils.tools.utils import get_document_context, get_json_field, query_collection, generate_window_document, format_as_json
+from gcp_utils.constants import CONFIG_PATH, BATCH_SIZE
 from database_tools.tools.dataset import ConfigMapper
 
 client = firestore.Client()
 cm = ConfigMapper(CONFIG_PATH)
 
 def onUpdateFrame(data, context):
-    """Filter and split new frames written to '{uid}/frames'.
+    """Filter and split new frames written to 'bpm_data/{uid}/frames/{fid}'."""
+    collection_path, document_name = get_document_context(context)
+    doc_reference = client.collection(collection_path).document(document_name)
 
-    Preprocessing Steps
-    -------------------
-    1. Apply bandpass filter to frame.
-    2. Resample frame.
-    4. Calculate SpO2 and pulse rate from frame.
-    3. Generate individual windows from frame (for bp pred).
-    """
-    collection_path, document_path = get_document_context(context)
-    affected_doc = client.collection(collection_path).document(document_path)
-
-    status = data["value"]["fields"]["status"]["stringValue"]
+    status = get_json_field(data, 'status', 'str')
     if status == 'new':
-        # New long form frame from BPM device
-        red_frame = [float(x['doubleValue']) for x in data["value"]["fields"]["red_frame"]["arrayValue"]["values"]]
-        ir_frame = [float(x['doubleValue']) for x in data["value"]["fields"]["ir_frame"]["arrayValue"]["values"]]
+        red_frame = get_json_field(data, 'red_frame', 'list')
+        ir_frame = get_json_field(data, 'ir_frame', 'list')
+        fid = get_json_field(data, 'fid', 'str')
 
-        # Frame ID (uid)
-        fid = str(data["value"]["fields"]["fid"]["stringValue"])
-
-        # Target Firestore collection (bpm_data or bpm_data_test)
-        target = str(data["value"]["fields"]["target"]["stringValue"])
-
-        # Processing steps
         processed = process_frame(red_frame, ir_frame, cm=cm)
         cardiac_metrics = predict_cardiac_metrics(
-            red=processed['red_frame_for_processing'],
-            ir=processed['ir_frame_for_processing'],
+            red=red_frame,
+            ir=ir_frame,
             cm=cm,
         )
-        windows = [s for s in generate_window_document(processed['windows'], fid)]
-
-        col = client.collection(target).document(document_path.split('/')[0]).collection(u'windows')
-        for w in windows:
-            col.add(w)
-
-        affected_doc.update({
+        doc_reference.update({
             u'status': 'processed',
-            u'red_frame': processed['red_frame_for_processing'],
-            u'ir_frame': processed['ir_frame_for_processing'],
             u'red_frame_for_presentation': processed['red_frame_for_presentation'],
             u'ir_frame_for_presentation': processed['ir_frame_for_presentation'],
-            u'combined_frame_for_processing': processed['combined_frame_for_processing'],
-            u'combined_frame_for_presentation': processed['combined_frame_for_presentation'],
+            u'frame_for_prediction': processed['frame_for_prediction'],
             u'pulse_rate': cardiac_metrics['pulse_rate'],
             u'spo2': cardiac_metrics['spo2'],
             u'r': cardiac_metrics['r'],
         })
 
+        windows = [s for s in generate_window_document(processed['windows'], fid)]
+        user_reference = '/'.join(collection_path.split('/')[0:-1])
+        col = client.collection(user_reference + '/windows')
+        for w in windows:
+            col.add(w)
+    return
+
 def onCreateWindow(data, context):
     """Validate new windows."""
-    collection_path, document_path = get_document_context(context)
-    affected_doc = client.collection(collection_path).document(document_path)
+    collection_path, document_name = get_document_context(context)
+    doc_reference = client.collection(collection_path).document(document_name)
 
-    # Raw ppg window
-    ppg = [float(x['doubleValue']) for x in data["value"]["fields"]["ppg"]["arrayValue"]['values']]
-
-    # Perform validation on window and return results
+    ppg = get_json_field(data, 'ppg', 'list')
     result = validate_window(
         ppg=ppg,
         cm=cm,
+        force_valid=True,
     )
-
-    affected_doc.update({
+    doc_reference.update({
         u'status': result['status'],
         u'vpg': result['vpg'],
         u'apg': result['apg'],
@@ -86,17 +66,24 @@ def onCreateWindow(data, context):
         u'notches': result['notches'],
         u'flat_lines': result['flat_lines'],
     })
+    return
 
 def onUpdateWindow(data, context):
-    """Make BP prediction using model endpoint (vital-bee-206-serving)."""
-    collection_path, document_path = get_document_context(context)
-    affected_doc = client.collection(collection_path).document(document_path)
+    collection_path, document_name = get_document_context(context)
+    col_reference = client.collection(collection_path)
 
-    # Make prediction only if window is valid
-    status = str(data["value"]["fields"]["status"]["stringValue"])
-    if status == 'valid':
-        result = predict_bp(data, cm)
-        affected_doc.update({
-            u'status': result['status'],
-            u'abp': result['abp'],
-        })
+    windows = query_collection(col_reference, 'status', '==', 'valid')
+
+    if len(windows) >= BATCH_SIZE:
+        windows_paths = [w.reference.path for w in windows]
+        result = predict_bp(format_as_json([w.to_dict() for w in windows]), cm)
+        for path, abp in zip(windows_paths, result):
+            doc_reference = client.document(path)
+            doc_reference.update({
+                u'status': 'predicted',
+                u'abp': abp,
+            })
+
+# TODO: Implement logic to only predict on valid windows.
+# TODO: Fix frame preprocessing
+# TODO: Implement abp postprocessing

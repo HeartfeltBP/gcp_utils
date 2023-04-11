@@ -18,20 +18,14 @@ def process_frame(red_frame: list, ir_frame: list, cm: ConfigMapper) -> dict:
     red_filt_flip = _flip_signal(red_filt)
     ir_filt_flip = _flip_signal(ir_filt)
 
-    # combine wavelengths (for presentation)
-    combined = (red_filt_flip + ir_filt_flip) / 2  # averaging strategy
-
     # resample and split into windows (for bp prediction)
-    combined_resamp = resample_signal(sig=combined, fs_old=cm.deploy.bpm_fs, fs_new=cm.data.fs)
-    windows = _split_frame(sig=combined_resamp, n=int(combined_resamp.shape[0] / cm.data.win_len))
+    red_resamp = resample_signal(sig=red_filt_flip, fs_old=cm.deploy.bpm_fs, fs_new=cm.data.fs)
+    windows = _split_frame(sig=red_resamp, n=int(red_resamp.shape[0] / cm.data.win_len))
 
     result = {
-        'red_frame_for_processing': red_frame.tolist(),
-        'ir_frame_for_processing': ir_frame.tolist(),
         'red_frame_for_presentation': red_filt_flip.tolist(),
         'ir_frame_for_presentation': ir_filt_flip.tolist(),
-        'combined_frame_for_presentation': combined.tolist(),
-        'combined_frame_for_processing': combined_resamp.tolist(),
+        'frame_for_prediction': red_resamp.tolist(),
         'windows': windows,
     }
     return result
@@ -58,6 +52,11 @@ def validate_window(ppg: list, cm: ConfigMapper, force_valid: bool = False) -> d
     # convert to numpy array
     ppg = np.array(ppg, dtype=np.float32)
 
+    # bpm_scaling
+    with open(cm.deploy.bpm_scaler_path, 'rb') as f:
+        scaler = pkl.load(f)
+    ppg = np.divide(ppg - scaler[0], scaler[1] - scaler[0])
+
     # validate window with call to win.valid
     win = Window(ppg, cm, checks=cm.data.checks)
     win.get_peaks()
@@ -74,7 +73,7 @@ def validate_window(ppg: list, cm: ConfigMapper, force_valid: bool = False) -> d
         vpg, apg = np.array([]), np.array([])
 
     # scale data with mimic3 training minmax scaler
-    ppg_s, vpg_s, apg_s = _scale_data(cm.deploy.cloud_scaler_path, ppg, vpg, apg)
+    ppg_s, vpg_s, apg_s = _scale_data(cm.deploy.enceladus_scaler_path, ppg, vpg, apg)
 
     flat_lines = not win._flat_check
     result = {
