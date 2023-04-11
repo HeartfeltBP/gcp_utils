@@ -6,4 +6,5 @@ scipy==1.9.3
 pandas==1.5.2
 google-cloud==0.34.0
 google-cloud-aiplatform==1.21.0
+mock==5.0.1
 heartfelt-tools==1.8.0

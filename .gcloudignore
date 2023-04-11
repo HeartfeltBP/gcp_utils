@@ -9,7 +9,7 @@
 .gcloudignore
 .git
 .gitignore
-test/
+tests/
 scripts/
 notebooks/
 poetry.lock
