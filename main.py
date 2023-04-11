@@ -8,6 +8,9 @@ from database_tools.tools.dataset import ConfigMapper
 client = firestore.Client()
 cm = ConfigMapper(CONFIG_PATH)
 
+# TODO: Fix frame preprocessing
+# TODO: Implement abp postprocessing
+
 def onUpdateFrame(data, context):
     """Filter and split new frames written to 'bpm_data/{uid}/frames/{fid}'."""
     collection_path, document_name = get_document_context(context)
@@ -83,7 +86,3 @@ def onUpdateWindow(data, context):
                 u'status': 'predicted',
                 u'abp': abp,
             })
-
-# TODO: Implement logic to only predict on valid windows.
-# TODO: Fix frame preprocessing
-# TODO: Implement abp postprocessing
