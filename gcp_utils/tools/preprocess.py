@@ -6,29 +6,58 @@ from database_tools.processing.modify import bandpass
 from database_tools.processing.utils import resample_signal
 
 def process_frame(red_frame: list, ir_frame: list, cm: ConfigMapper) -> dict:
-    # sanitize data (for spo2 calculation)
+    """
+    Steps
+    -----
+    1. Sanitize (handle NaN values)
+    2. Clean (remove large spikes)
+    3. Resample (bpm fs -> mimic3 fs)
+    4. Flip (correct ppg direction)
+    5. Filter (Remove noise)
+    6. Split into windows
+    """
+    # 1
     red_frame = np.array(red_frame, dtype=np.float32)
     red_frame[np.isnan(red_frame)] = 0
     ir_frame = np.array(ir_frame, dtype=np.float32)
     ir_frame[np.isnan(ir_frame)] = 0
 
-    # bandpass and flip (for presentation)
-    red_filt = bandpass(red_frame, low=cm.data.freq_band[0], high=cm.data.freq_band[1], fs=cm.deploy.bpm_fs)
-    ir_filt = bandpass(ir_frame, low=cm.data.freq_band[0], high=cm.data.freq_band[1], fs=cm.deploy.bpm_fs)
-    red_filt_flip = _flip_signal(red_filt)
-    ir_filt_flip = _flip_signal(ir_filt)
+    # 2
+    red_clean = _clean_frame(red_frame, thresh=cm.deploy.clean_thresh)
+    ir_clean = _clean_frame(ir_frame, thresh=cm.deploy.clean_thresh)
 
-    # resample and split into windows (for bp prediction)
-    red_resamp = resample_signal(sig=red_filt_flip, fs_old=cm.deploy.bpm_fs, fs_new=cm.data.fs)
-    windows = _split_frame(sig=red_resamp, n=int(red_resamp.shape[0] / cm.data.win_len))
+    # 3
+    red_resamp = resample_signal(red_clean, fs_old=cm.deploy.bpm_fs, fs_new=cm.data.fs)
+    ir_resamp = resample_signal(ir_clean, fs_old=cm.deploy.bpm_fs, fs_new=cm.data.fs)
+
+    # 4
+    red_flip = _flip_signal(red_resamp)
+    ir_flip = _flip_signal(ir_resamp)
+
+    # 5
+    red_filt = bandpass(red_flip, low=cm.data.freq_band[0], high=cm.data.freq_band[1], fs=cm.deploy.bpm_fs, method='butter')
+    ir_filt = bandpass(ir_flip, low=cm.data.freq_band[0], high=cm.data.freq_band[1], fs=cm.deploy.bpm_fs, method='butter')
+
+    # 6
+    windows = _split_frame(sig=ir_filt, n=int(ir_filt.shape[0] / cm.data.win_len))
 
     result = {
-        'red_frame_for_presentation': red_filt_flip.tolist(),
-        'ir_frame_for_presentation': ir_filt_flip.tolist(),
-        'frame_for_prediction': red_resamp.tolist(),
+        'red_frame_spo2': red_clean,
+        'ir_frame_spo2': ir_clean,
+        'red_frame_for_presentation': red_filt.tolist(),
+        'ir_frame_for_presentation': ir_filt.tolist(),
+        'frame_for_prediction': ir_filt.tolist(),
         'windows': windows,
     }
     return result
+
+def _clean_frame(sig, thresh):
+    """Set points too far from median value to median value."""
+    sig = sig.reshape(-1) # must be 1d
+    med = np.median(sig)
+    mask = np.where( (sig > (med + thresh)) | (sig < (med - thresh)) )
+    sig[mask] = med
+    return sig
 
 def _flip_signal(sig):
     """Flip signal data but subtracting the maximum value."""
@@ -63,7 +92,7 @@ def validate_window(ppg: list, cm: ConfigMapper, force_valid: bool = False) -> d
     status = 'valid' if win.valid else 'invalid'
 
     # debug mode
-    if force_valid:
+    if cm.deploy.force_valid:
         status = 'valid'
 
     # get model inputs if valid

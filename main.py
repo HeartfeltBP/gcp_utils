@@ -24,8 +24,8 @@ def onUpdateFrame(data, context):
 
         processed = process_frame(red_frame, ir_frame, cm=cm)
         cardiac_metrics = predict_cardiac_metrics(
-            red=red_frame,
-            ir=ir_frame,
+            red=processed['red_frame_spo2'],
+            ir=processed['ir_frame_spo2'],
             cm=cm,
         )
         doc_reference.update({
@@ -54,7 +54,6 @@ def onCreateWindow(data, context):
     result = validate_window(
         ppg=ppg,
         cm=cm,
-        force_valid=True,
     )
     doc_reference.update({
         u'status': result['status'],

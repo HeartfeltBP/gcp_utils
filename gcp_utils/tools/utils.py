@@ -88,9 +88,3 @@ def generate_window_document(windows: list, fid: str) -> dict:
             'flat_lines': True,
         }
         yield doc
-
-def _hash_obj(obj):
-    uid = hashlib.sha256(
-        json.dumps(sorted({str(obj): obj})).encode("utf-8")
-    ).hexdigest()
-    return uid

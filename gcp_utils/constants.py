@@ -26,8 +26,8 @@ def processed_frame_and_windows():
 
     processed = process_frame(red_frame, ir_frame, cm=cm)
     cardiac_metrics = predict_cardiac_metrics(
-        red=red_frame,
-        ir=ir_frame,
+        red=processed['red_frame_spo2'],
+        ir=processed['ir_frame_spo2'],
         cm=cm,
     )
     windows = [s for s in generate_window_document(processed['windows'], NEW_BPM_FRAME['fid'])]

@@ -8,9 +8,30 @@ from database_tools.processing.cardiac import estimate_pulse_rate, estimate_spo2
 from database_tools.processing.detect import detect_peaks
 from database_tools.tools.dataset import ConfigMapper
 
+def clean_peaks_spo2(sig, idx, thresh):
+    peaks, troughs = idx.values()
+    peak_vals = sig[peaks]
+    trough_vals = sig[troughs]
+
+    mean = np.mean(peak_vals)
+    mask = np.where( (peak_vals < (mean + thresh)) & (peak_vals > (mean - thresh)) )
+    peaks_cleaned = peaks[mask]
+
+    mean = np.mean(trough_vals)
+    mask = np.where( (trough_vals < (mean + thresh)) & (trough_vals > (mean - thresh)) )
+    troughs_cleaned = troughs[mask]
+    return dict(peaks=peaks_cleaned, troughs=troughs_cleaned)
+
 def predict_cardiac_metrics(red: list, ir: list, cm: ConfigMapper) -> dict:
+    i = 1
+    red = np.split(red, 4)[i]
+    ir = np.split(ir, 4)[i]
+
     red_idx = detect_peaks(np.array(red))
     ir_idx = detect_peaks(np.array(ir))
+
+    red_idx = clean_peaks_spo2(red, red_idx, cm.deploy.spo2_thresh)
+    ir_idx = clean_peaks_spo2(ir, ir_idx, cm.deploy.spo2_thresh)
 
     pulse_rate = estimate_pulse_rate(red, ir, red_idx, ir_idx, fs=cm.deploy.bpm_fs)
     spo2, r = estimate_spo2(red, ir, red_idx, ir_idx)
@@ -32,10 +53,6 @@ def predict_bp(data: dict, cm: ConfigMapper):
         )
     except Exception as e:
         abp = [np.zeros((256)).tolist() for i in range(len(instances))]
-
-    # TODO: Remove this
-    if cm.deploy.rescale_bp:
-        abp = _rescale_bp(cm.deploy.cloud_scaler_path, abp)
 
     result = [i.tolist() for i in abp]
     return result
@@ -90,10 +107,3 @@ def _predict(
     # The predictions are a google.protobuf.Value representation of the model's predictions.
     pred = np.array(response.predictions).reshape(-1, 256)
     return pred
-
-def _rescale_bp(path: str, abp: np.ndarray) -> np.ndarray:
-    with open(path, 'rb') as f:
-        scalers, _ = pkl.load(f)
-    abp_scaler = scalers['abp']
-    abp_s = np.multiply(abp, abp_scaler[1] - abp_scaler[0]) + abp_scaler[0]
-    return abp_s.tolist()
