@@ -71,11 +71,12 @@ def processed_windows():
 def predicted_windows():
     cm = ConfigMapper(CONFIG_PATH)
     windows = processed_windows()
-    data = format_as_json(windows)
+    valid_windows = [w for w in windows if w['status'] == 'valid']
+    data = format_as_json(valid_windows)
     result = predict_bp(data, cm)
 
     predicted_windows = []
-    for win, abp in zip(windows, result):
+    for win, abp in zip(valid_windows, result):
         win.update({
             u'status': 'predicted',
             u'abp': abp,
