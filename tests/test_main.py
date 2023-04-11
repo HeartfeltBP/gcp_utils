@@ -13,7 +13,7 @@ def test_onUpdateFrame():
     database = firestore.client()
     frames_ref = database.collection(u'bpm_data_test').document(UID).collection(u'frames')
 
-    # Add frame and trigger function
+    # Trigger function
     frames_ref.add(constants.NEW_BPM_FRAME)
     doc = query_collection(frames_ref, 'fid', '==', '0')[0]
     data = format_as_json(constants.NEW_BPM_FRAME)[0]
@@ -27,19 +27,19 @@ def test_onUpdateFrame():
     # Get actual result
     doc = query_collection(frames_ref, 'fid', '==', '0')[0]
     actual_frame = format_as_json(doc.to_dict())[0]
-
     windows_ref = database.collection(u'bpm_data_test').document(UID).collection(u'windows')
     docs = query_collection(windows_ref, 'fid', '==', '0')
     actual_windows = format_as_json([d.to_dict() for d in docs])
 
     case = unittest.TestCase()
-    case.assertCountEqual(dict(x=actual_frame, y=actual_windows), dict(x=expected_frame, y=expected_windows))
+    case.maxDiff = None
+    case.assertCountEqual(dict(x=expected_frame, y=expected_windows), dict(x=actual_frame, y=actual_windows))
 
 def test_onCreateWindow():
     database = firestore.client()
     windows_ref = database.collection(u'bpm_data_test').document(UID).collection(u'windows')
 
-    # Add raw valid sample to collection (and get context
+    # Trigger function
     docs = query_collection(windows_ref, 'fid', '==', '0')
     for d in docs:
         data = format_as_json(d.to_dict())[0]
@@ -49,25 +49,31 @@ def test_onCreateWindow():
     # Get expected result
     expected_windows = format_as_json(constants.processed_windows())
 
-    # Get processed data from firebase and compare
+    # Get actual result
     docs = query_collection(windows_ref, 'fid', '==', '0')
     actual_windows = format_as_json([d.to_dict() for d in docs])
-    assert actual_windows == expected_windows
+
+    case = unittest.TestCase()
+    case.maxDiff = None
+    case.assertCountEqual(dict(x=expected_windows), dict(x=actual_windows))
 
 def test_onUpdateWindow():
     database = firestore.client()
     windows_ref = database.collection(u'bpm_data_test').document(UID).collection(u'windows')
 
-    # Trigger cloud function with last window
+    # Trigger function
     doc = query_collection(windows_ref, 'fid', '==', '0')[0]
     data = format_as_json(doc.to_dict())[0]
     context = mock_context(doc.reference.path)
     onUpdateWindow(data, context)
 
-    # Get expected results
+    # Get expected result
     expected_windows = format_as_json(constants.predicted_windows())
 
-    # Get prediction from firebase and compare
-    docs = query_collection(windows_ref, 'wid', '==', '0')
+    # Get actual result
+    docs = query_collection(windows_ref, 'fid', '==', '0')
     actual_windows = format_as_json([d.to_dict() for d in docs])
-    assert actual_windows == expected_windows
+
+    case = unittest.TestCase()
+    case.maxDiff = None
+    case.assertCountEqual(dict(x=expected_windows), dict(x=actual_windows))

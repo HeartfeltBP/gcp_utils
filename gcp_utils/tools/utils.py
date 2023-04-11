@@ -67,9 +67,10 @@ def mock_context(ref):
     return context
 
 def generate_window_document(windows: list, fid: str) -> dict:
-    for w in windows:
+    for i, w in enumerate(windows):
+        wid = str(fid) + '_' + str(i)
         doc = {
-            'wid': str(_hash_obj(w)),
+            'wid': str(wid),
             'fid': str(fid),
             'status': 'new',
             'ppg': list(w),
