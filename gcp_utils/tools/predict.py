@@ -23,17 +23,13 @@ def clean_peaks_spo2(sig, idx, thresh):
     return dict(peaks=peaks_cleaned, troughs=troughs_cleaned)
 
 def predict_cardiac_metrics(red: list, ir: list, cm: ConfigMapper) -> dict:
-    i = 1
-    red = np.split(red, 4)[i]
-    ir = np.split(ir, 4)[i]
-
     red_idx = detect_peaks(np.array(red))
     ir_idx = detect_peaks(np.array(ir))
 
     red_idx = clean_peaks_spo2(red, red_idx, cm.deploy.spo2_thresh)
     ir_idx = clean_peaks_spo2(ir, ir_idx, cm.deploy.spo2_thresh)
 
-    pulse_rate = estimate_pulse_rate(red, ir, red_idx, ir_idx, fs=cm.deploy.bpm_fs)
+    pulse_rate = _calc_pulse_rate(ir_idx, fs=cm.deploy.bpm_fs)
     spo2, r = estimate_spo2(red, ir, red_idx, ir_idx)
     result = {
         'pulse_rate': int(pulse_rate),
@@ -41,6 +37,10 @@ def predict_cardiac_metrics(red: list, ir: list, cm: ConfigMapper) -> dict:
         'r': float(r)
     }
     return result
+
+def _calc_pulse_rate(ir_idx, fs):
+    pulse_rate = fs / np.mean(np.diff(ir_idx['peaks'])) * 60
+    return pulse_rate
 
 def predict_bp(data: dict, cm: ConfigMapper):
     instances = _get_inputs(data)
