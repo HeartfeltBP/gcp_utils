@@ -28,8 +28,13 @@ def _calc_spo2(ppg_red, ppg_ir, red_idx, ir_idx, method='linear'):
 
     # choose where to calculate based on shorted list
     options = [red_peaks, red_troughs, ir_peaks, ir_troughs]
-    longest_idx = np.argmin([len(x) for x in options])
-    i = int(len(longest_idx) / 2)
+    lengths = [len(x) for x in options]
+
+    # Return error code if missing needed value
+    if 0 in lengths:
+        return (-1, -1)
+
+    i = int(len(np.argmin(lengths)) / 2)
 
     red_high, red_low = np.max(ppg_red[red_peaks[i]]), np.min(ppg_red[red_troughs[i]])
     ir_high, ir_low = np.max(ppg_ir[ir_peaks[i]]), np.min(ppg_ir[ir_troughs[i]])
