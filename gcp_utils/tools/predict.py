@@ -34,7 +34,7 @@ def _calc_spo2(ppg_red, ppg_ir, red_idx, ir_idx, method='linear'):
     if 0 in lengths:
         return (-1, -1)
 
-    i = int(len(np.argmin(lengths)) / 2)
+    i = int(len(options[np.argmin(lengths)]) / 2)
 
     red_high, red_low = np.max(ppg_red[red_peaks[i]]), np.min(ppg_red[red_troughs[i]])
     ir_high, ir_low = np.max(ppg_ir[ir_peaks[i]]), np.min(ppg_ir[ir_troughs[i]])
