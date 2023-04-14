@@ -4,33 +4,13 @@ from typing import Dict, List, Union
 from google.cloud import aiplatform
 from google.protobuf import json_format
 from google.protobuf.struct_pb2 import Value
-from database_tools.processing.cardiac import estimate_pulse_rate, estimate_spo2
 from database_tools.processing.detect import detect_peaks
 from database_tools.tools.dataset import ConfigMapper
 
-def clean_peaks_spo2(sig, idx, thresh):
-    peaks, troughs = idx.values()
-    peak_vals = sig[peaks]
-    trough_vals = sig[troughs]
-
-    mean = np.mean(peak_vals)
-    mask = np.where( (peak_vals < (mean + thresh)) & (peak_vals > (mean - thresh)) )
-    peaks_cleaned = peaks[mask]
-
-    mean = np.mean(trough_vals)
-    mask = np.where( (trough_vals < (mean + thresh)) & (trough_vals > (mean - thresh)) )
-    troughs_cleaned = troughs[mask]
-    return dict(peaks=peaks_cleaned, troughs=troughs_cleaned)
-
-def predict_cardiac_metrics(red: list, ir: list, cm: ConfigMapper) -> dict:
-    red_idx = detect_peaks(np.array(red))
-    ir_idx = detect_peaks(np.array(ir))
-
-    red_idx = clean_peaks_spo2(red, red_idx, cm.deploy.spo2_thresh)
-    ir_idx = clean_peaks_spo2(ir, ir_idx, cm.deploy.spo2_thresh)
-
+def predict_cardiac_metrics(red: list, ir: list, red_idx: list, ir_idx: list, cm: ConfigMapper) -> dict:
+    red, ir = np.array(red), np.array(ir)
     pulse_rate = _calc_pulse_rate(ir_idx, fs=cm.deploy.bpm_fs)
-    spo2, r = estimate_spo2(red, ir, red_idx, ir_idx)
+    spo2, r = _calc_spo2(red, ir, red_idx, ir_idx)
     result = {
         'pulse_rate': int(pulse_rate),
         'spo2': float(spo2),
@@ -38,11 +18,32 @@ def predict_cardiac_metrics(red: list, ir: list, cm: ConfigMapper) -> dict:
     }
     return result
 
-def _calc_pulse_rate(ir_idx, fs):
-    pulse_rate = fs / np.mean(np.diff(ir_idx['peaks'])) * 60
+def _calc_pulse_rate(idx, fs):
+    pulse_rate = fs / np.mean(np.diff(idx['peaks'])) * 60
     return pulse_rate
 
-def predict_bp(data: dict, cm: ConfigMapper):
+def _calc_spo2(ppg_red, ppg_ir, red_idx, ir_idx, method='linear'):
+    red_peaks, red_troughs = red_idx['peaks'], red_idx['troughs']
+    ir_peaks, ir_troughs = ir_idx['peaks'], ir_idx['troughs']
+
+    # TODO: Choose based off of shorted list
+    i = int(len(ir_peaks) / 2)
+
+    red_high, red_low = np.max(ppg_red[red_peaks[i]]), np.min(ppg_red[red_troughs[i]])
+    ir_high, ir_low = np.max(ppg_ir[ir_peaks[i]]), np.min(ppg_ir[ir_troughs[i]])
+
+    ac_red = red_high - red_low
+    ac_ir = ir_high - ir_low
+
+    r = ( ac_red / red_low ) / ( ac_ir / ir_low )
+
+    if method == 'linear':
+        spo2 = round(104 - (17 * r), 1)
+    elif method == 'curve':
+        spo2 = (1.596 * (r ** 2)) + (-34.670 * r) + 112.690
+    return (spo2, r)
+
+def predict_bp(data: dict):
     instances = _get_inputs(data)
     try:
         abp = _predict(
@@ -52,9 +53,13 @@ def predict_bp(data: dict, cm: ConfigMapper):
             instances=instances,
         )
     except Exception as e:
-        abp = [np.zeros((256)).tolist() for i in range(len(instances))]
+        abp = [dict(abp=np.zeros((256)).tolist(), sbp=0, dbp=0) for i in range(len(instances))]
 
-    result = [i.tolist() for i in abp]
+    result = []
+    for i in abp:
+        peaks, troughs = detect_peaks(i).values()
+        sbp, dbp = np.mean(i[peaks]), np.mean(i[troughs])
+        result.append(dict(abp=i.tolist(), sbp=int(sbp), dbp=int(dbp)))
     return result
 
 def _get_inputs(data) -> dict:

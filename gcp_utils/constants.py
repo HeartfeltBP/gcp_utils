@@ -28,6 +28,8 @@ def processed_frame_and_windows():
     cardiac_metrics = predict_cardiac_metrics(
         red=processed['red_frame_spo2'],
         ir=processed['ir_frame_spo2'],
+        red_idx=processed['red_idx'],
+        ir_idx=processed['ir_idx'],
         cm=cm,
     )
     windows = [s for s in generate_window_document(processed['windows'], NEW_BPM_FRAME['fid'])]
@@ -69,17 +71,18 @@ def processed_windows():
     return processed_windows
 
 def predicted_windows():
-    cm = ConfigMapper(CONFIG_PATH)
     windows = processed_windows()
     valid_windows = [w for w in windows if w['status'] == 'valid']
     data = format_as_json(valid_windows)
-    result = predict_bp(data, cm)
+    result = predict_bp(data)
 
     predicted_windows = []
-    for win, abp in zip(valid_windows, result):
+    for win, r in zip(valid_windows, result):
         win.update({
             u'status': 'predicted',
-            u'abp': abp,
+            u'abp': r['abp'],
+            u'sbp': r['sbp'],
+            u'dbp': r['dbp'],
         })
         predicted_windows.append(win)
     return predicted_windows

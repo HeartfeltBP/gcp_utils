@@ -26,6 +26,8 @@ def onUpdateFrame(data, context):
         cardiac_metrics = predict_cardiac_metrics(
             red=processed['red_frame_spo2'],
             ir=processed['ir_frame_spo2'],
+            red_idx=processed['red_idx'],
+            ir_idx=processed['ir_idx'],
             cm=cm,
         )
         doc_reference.update({
@@ -71,17 +73,19 @@ def onCreateWindow(data, context):
     return
 
 def onUpdateWindow(data, context):
-    collection_path, document_name = get_document_context(context)
+    collection_path, _ = get_document_context(context)
     col_reference = client.collection(collection_path)
 
     windows = query_collection(col_reference, 'status', '==', 'valid')
 
     if len(windows) >= BATCH_SIZE:
         windows_paths = [w.reference.path for w in windows]
-        result = predict_bp(format_as_json([w.to_dict() for w in windows]), cm)
-        for path, abp in zip(windows_paths, result):
+        result = predict_bp(format_as_json([w.to_dict() for w in windows]))
+        for path, r in zip(windows_paths, result):
             doc_reference = client.document(path)
             doc_reference.update({
                 u'status': 'predicted',
-                u'abp': abp,
+                u'abp': r['abp'],
+                u'sbp': r['sbp'],
+                u'dbp': r['dbp'],
             })
