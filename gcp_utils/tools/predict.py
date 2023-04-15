@@ -20,7 +20,10 @@ def predict_cardiac_metrics(red: list, ir: list, red_idx: list, ir_idx: list, cm
 
 def _calc_pulse_rate(idx, fs):
     pulse_rate = fs / np.mean(np.diff(idx['peaks'])) * 60
-    return pulse_rate
+    if np.isnan(pulse_rate):
+        return -1
+    else:
+        return pulse_rate
 
 def _calc_spo2(ppg_red, ppg_ir, red_idx, ir_idx, method='linear'):
     red_peaks, red_troughs = red_idx['peaks'], red_idx['troughs']
@@ -43,6 +46,8 @@ def _calc_spo2(ppg_red, ppg_ir, red_idx, ir_idx, method='linear'):
     ac_ir = ir_high - ir_low
 
     r = ( ac_red / red_low ) / ( ac_ir / ir_low )
+    if (r < 0) | (r > 5):
+        return (-2, r)
 
     if method == 'linear':
         spo2 = round(104 - (17 * r), 1)
