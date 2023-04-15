@@ -150,12 +150,15 @@ def _remove_sig_outliers(sig, amp_thresh):
     temp[np.where(~mask)] = 1
     _, run_starts, run_lengths = _find_runs(temp)
 
-    # find the longest run and set all other data to median
-    k = np.argmax(run_lengths)
-    i, j = run_starts[k], run_starts[k+1]
-    sig[0:i] = med
-    sig[j::] = med
-    return sig, i, j
+    if len(run_lengths) < 2:
+        return sig, 0, len(sig) - 1
+    else:
+        # find the longest run and set all other data to median
+        k = np.argmax(run_lengths)
+        i, j = run_starts[k], run_starts[k+1]
+        sig[0:i] = med
+        sig[j::] = med
+        return sig, i, j
 
 def _remove_peak_outliers(sig, idx, amp_thresh, dist_thresh):
     # remove indices whose amplitude is too far from mean
