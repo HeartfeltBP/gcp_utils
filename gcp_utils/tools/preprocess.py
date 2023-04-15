@@ -56,109 +56,47 @@ def _preprocess_ppg(sig: list, cm: ConfigMapper):
        Also, calculate peaks in longest run of good data.
     """
     # Prep data
-    sig = np.array(sig).reshape(-1)
-    sig = np.array(sig, dtype=np.float32)
+    sig = np.array(sig, dtype=np.float32).reshape(-1)
     sig[np.isnan(sig)] = 0
 
     # Remove signal outliers
-    sig, i, j = _remove_sig_outliers(sig, cm.deploy.sig_amp_thresh)
+    sig = _remove_sig_outliers(sig, cm.deploy.sig_amp_thresh)
+    # return sig, dict()
 
     # get, remove outliers from, and order peaks
-    idx = detect_peaks(sig[i:j])
-    peaks, troughs = idx['peaks'] + i, idx['troughs'] + i
-    peaks = _remove_peak_outliers(sig, peaks, cm.deploy.peak_amp_thresh, cm.deploy.peak_dist_thresh)
-    troughs = _remove_peak_outliers(sig, troughs, cm.deploy.peak_amp_thresh, cm.deploy.peak_dist_thresh)
+    try:
+        idx = detect_peaks(bandpass(sig, low=0.5, high=8.0, fs=cm.deploy.bpm_fs))
 
-    idx = dict(peaks=peaks, troughs=troughs)
-    idx = _get_ordered_idx(idx)
+        peaks, troughs = idx['peaks'], idx['troughs']
+        peaks = _remove_peak_outliers(sig, peaks, cm.deploy.peak_amp_thresh, cm.deploy.peak_dist_thresh)
+        troughs = _remove_peak_outliers(sig, troughs, cm.deploy.peak_amp_thresh, cm.deploy.peak_dist_thresh)
 
-    peaks, troughs = idx['peaks'], idx['troughs']
-
-    peaks_troughs = np.concatenate([peaks, troughs])
-    min_idx = np.min(peaks_troughs)
-    max_idx = np.max(peaks_troughs)
-    sig[0:min_idx-1] = sig[i]
-    sig[max_idx+1::] = sig[j]
+        idx = dict(peaks=peaks, troughs=troughs)
+    except Exception as e:
+        idx = dict(peaks=[], troughs=[])
     return sig, idx
 
-def _get_ordered_idx(idx: dict) -> Tuple[list, list]:
-    """Takes a list of peaks and troughs and removes
-       out of order elements. Regardless of which occurs first,
-       a peak or a trough, a peak must be followed by a trough
-       and vice versa.
-
-    Algorithm (if peaks start first)
-    ---------
-    - Loop through values starting with first peak
-    - Is peak before valley?
-        YES -> Is next peak after valley?
-            YES -> Append peak and valley. Get next peak and valley.
-            NO  -> Get next peak.
-        NO  -> Get next valley.
-
-    Args:
-        peaks (list): Signal peaks.
-        troughs (list): Signal troughs.
-
-    Returns:
-        first_repaired (list): Input with out of order items removed.
-        second_repaired (list): Input with out of order items removed.
-
-        Items are always returned with peaks idx as first tuple item.
-    """
-    order_lists = lambda x, y : (x, y, 0, 1) if x[0] < y[0] else (y, x, 1, 0)
-
-    # Configure algorithm to start with lowest index.
-    peaks, troughs = idx['peaks'], idx['troughs']
-
-    try:
-        first, second, flag1, flag2 = order_lists(peaks, troughs)
-    except IndexError:
-        return dict(peaks=np.array([]), troughs=np.array([]))
-
-    result = dict(first=[], second=[])
-    i, j = 0, 0
-    for _ in enumerate(first):
-        try:
-            poi_1, poi_2 = first[i], second[j]
-            if poi_1 < poi_2:  # first point of interest is before second
-                poi_3 = first[i + 1]
-                if poi_2 < poi_3:  # second point of interest is before third
-                    result['first'].append(poi_1)
-                    result['second'].append(poi_2)
-                    i += 1; j += 1
-                else:
-                    i += 1
-            else:
-                j += 1
-        except IndexError: # always thrown in last iteration
-            result['first'].append(poi_1)
-            result['second'].append(poi_2)
-
-    # remove duplicates and return as peaks, troughs
-    result['first'] = sorted(list(set(result['first'])))
-    result['second'] = sorted(list(set(result['second'])))
-    result = [result['first'], result['second']]
-    return dict(peaks=np.array(result[flag1]), troughs=np.array(result[flag2]))
-
-def _remove_sig_outliers(sig, amp_thresh):
+def _remove_sig_outliers(sig, amp_thresh, buffer=50):
     med = np.median(sig)
     mask = (sig > (med + amp_thresh)) | (sig < (med - amp_thresh))
 
     temp = sig.copy()
     temp[np.where(mask)] = 0
     temp[np.where(~mask)] = 1
-    _, run_starts, run_lengths = _find_runs(temp)
+    run_values, run_starts, run_lengths = _find_runs(temp)
 
-    if len(run_lengths) < 2:
-        return sig, 0, len(sig) - 1
+    if run_lengths.shape[0] < 2:
+        return sig
     else:
-        # find the longest run and set all other data to median
-        k = np.argmax(run_lengths)
-        i, j = run_starts[k], run_starts[k+1]
-        sig[0:i] = med
-        sig[j::] = med
-        return sig, i, j
+        for idx, val in enumerate(run_values):
+            if (val == 0) | ( (val == 1) & (run_lengths[idx] < 800) ):
+                if idx == (run_values.shape[0] - 1):
+                    i = run_starts[idx]
+                    sig[i::] = med
+                else:
+                    i, j = run_starts[idx], run_starts[idx+1]
+                    sig[i:j+buffer] = med
+        return sig
 
 def _remove_peak_outliers(sig, idx, amp_thresh, dist_thresh):
     # remove indices whose amplitude is too far from mean
@@ -170,7 +108,7 @@ def _remove_peak_outliers(sig, idx, amp_thresh, dist_thresh):
     # remove indices that are too from from each other
     diff = np.diff(idx, prepend=idx[0] - 10000, append=idx[-1] + 10000)
     delta = int(np.mean(diff[1:-1]))
-    print(delta)
+
     valid = []
     for i, distance1 in enumerate(diff[0:-1]):
         distance2 = diff[i+1]

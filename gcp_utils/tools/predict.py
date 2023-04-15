@@ -60,13 +60,16 @@ def predict_bp(data: dict):
             instances=instances,
         )
     except Exception as e:
-        abp = [dict(abp=np.zeros((256)).tolist(), sbp=0, dbp=0) for i in range(len(instances))]
+        abp = [dict(abp=np.zeros((256)).tolist(), sbp=-2, dbp=-2) for i in range(len(instances))]
 
     result = []
     for i in abp:
         peaks, troughs = detect_peaks(i).values()
-        sbp, dbp = np.mean(i[peaks]), np.mean(i[troughs])
-        result.append(dict(abp=i.tolist(), sbp=int(sbp), dbp=int(dbp)))
+        if (len(peaks) > 0) & (len(troughs) > 0):
+            sbp, dbp = int(np.mean(i[peaks])), int(np.mean(i[troughs]))
+        else:
+            sbp, dbp = -1, -1
+        result.append(dict(abp=i.tolist(), sbp=sbp, dbp=dbp))
     return result
 
 def _get_inputs(data) -> dict:
