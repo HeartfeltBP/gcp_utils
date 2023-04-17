@@ -22,6 +22,7 @@ def test_onUpdateFrame():
 
     # Get expected result
     expected_frame, expected_windows = constants.processed_frame_and_windows()
+    expected_frame['time'] = 'na'
     expected_frame, expected_windows = format_as_json(expected_frame)[0], format_as_json(expected_windows)
 
     # Get actual result

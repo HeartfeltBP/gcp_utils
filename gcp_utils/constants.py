@@ -1,7 +1,11 @@
+import os
+from datetime import datetime
 from gcp_utils.tools.preprocess import validate_window, process_frame
 from gcp_utils.tools.predict import predict_bp, predict_cardiac_metrics
 from gcp_utils.tools.utils import format_as_json, generate_window_document
 from database_tools.tools.dataset import ConfigMapper
+
+os.environ['TZ'] = 'America/New_York'
 
 BATCH_SIZE = 1
 CONFIG_PATH = 'gcp_utils/config.ini'
@@ -9,6 +13,7 @@ CONFIG_PATH = 'gcp_utils/config.ini'
 NEW_BPM_FRAME = {
     'fid': '0',
     'status': 'new',
+    'time': 'na',
     'pulse_rate': 0,
     'spo2': 0.0,
     'r': 0.0,

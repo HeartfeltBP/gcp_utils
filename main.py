@@ -1,9 +1,13 @@
+import os
+from datetime import datetime
 from google.cloud import firestore
 from gcp_utils.tools.preprocess import validate_window, process_frame
 from gcp_utils.tools.predict import predict_bp, predict_cardiac_metrics
 from gcp_utils.tools.utils import get_document_context, get_json_field, query_collection, generate_window_document, format_as_json
 from gcp_utils.constants import CONFIG_PATH, BATCH_SIZE
 from database_tools.tools.dataset import ConfigMapper
+
+os.environ['TZ'] = 'America/New_York'
 
 client = firestore.Client()
 cm = ConfigMapper(CONFIG_PATH)
@@ -18,6 +22,7 @@ def onUpdateFrame(data, context):
 
     status = get_json_field(data, 'status', 'str')
     if status == 'new':
+        time = str(datetime.now())
         red_frame = get_json_field(data, 'red_frame', 'list')
         ir_frame = get_json_field(data, 'ir_frame', 'list')
         fid = get_json_field(data, 'fid', 'str')
@@ -32,6 +37,7 @@ def onUpdateFrame(data, context):
         )
         doc_reference.update({
             u'status': 'processed',
+            u'time': time,
             u'red_frame_for_presentation': processed['red_frame_for_presentation'],
             u'ir_frame_for_presentation': processed['ir_frame_for_presentation'],
             u'frame_for_prediction': processed['frame_for_prediction'],

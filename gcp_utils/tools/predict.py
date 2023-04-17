@@ -1,5 +1,4 @@
 import numpy as np
-import pickle as pkl
 from typing import Dict, List, Union
 from google.cloud import aiplatform
 from google.protobuf import json_format
